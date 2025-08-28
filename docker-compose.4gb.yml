@@ -63,7 +63,7 @@ services:
   data-ingestion:
     build: 
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.4gb
     command: >
       uvicorn backend.data_ingestion:app
       --host 0.0.0.0
@@ -98,7 +98,7 @@ services:
   vector-search:
     build: 
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.4gb
     command: >
       uvicorn backend.vector_search:app
       --host 0.0.0.0
@@ -133,7 +133,7 @@ services:
   training-pipeline:
     build: 
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.4gb
     command: >
       uvicorn backend.training_pipeline:app
       --host 0.0.0.0
@@ -168,7 +168,7 @@ services:
   embedding-worker:
     build: 
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.4gb
     command: >
       celery -A backend.embedding_service worker
       --loglevel=info
@@ -199,7 +199,7 @@ services:
   monitor:
     build: 
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.4gb
     command: >
       uvicorn backend.monitoring_analytics:app
       --host 0.0.0.0

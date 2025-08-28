@@ -1,0 +1,56 @@
+# Optimized Dockerfile for 4GB Droplet - ChatBot SaaS
+FROM python:3.11-slim
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies (minimal)
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    libpq-dev \
+    libmagic1 \
+    libffi-dev \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Upgrade pip and install setuptools
+RUN pip install --upgrade pip setuptools wheel
+
+# Create app user
+RUN useradd --create-home --shell /bin/bash app
+
+# Set work directory
+WORKDIR /app
+
+# Copy requirements first (for better caching)
+COPY backend/requirements.txt .
+
+# Install Python dependencies with conflict resolution
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir setuptools wheel && \
+    pip install --no-cache-dir cryptography==3.4.8 && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY backend/ ./backend/
+COPY database/ ./database/
+
+# Create necessary directories
+RUN mkdir -p /app/models /app/logs /app/uploads && \
+    chown -R app:app /app
+
+# Switch to app user
+USER app
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:8001/health || exit 1
+
+# Default command
+CMD ["uvicorn", "backend.data_ingestion:app", "--host", "0.0.0.0", "--port", "8001", "--workers", "1"]
