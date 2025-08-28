@@ -1,0 +1,263 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg15
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-chatbot_saas_db}
+      POSTGRES_USER: ${POSTGRES_USER:-chatbot_saas_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - chatbot_postgres_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql
+    ports:
+      - "5433:5432"
+    deploy:
+      resources:
+        limits:
+          memory: 1200M
+          cpus: '0.8'
+        reservations:
+          memory: 800M
+          cpus: '0.5'
+    command: >
+      postgres -c max_connections=50
+               -c shared_buffers=256MB
+               -c effective_cache_size=512MB
+               -c work_mem=4MB
+               -c maintenance_work_mem=64MB
+               -c checkpoint_completion_target=0.9
+               -c random_page_cost=1.1
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-chatbot_user}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.2'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
+    command: >
+      redis-server
+      --maxmemory 200mb
+      --maxmemory-policy allkeys-lru
+      --save 60 1
+      --loglevel warning
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    volumes:
+      - redis_data:/data
+
+  data-ingestion:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    command: >
+      uvicorn backend.data_ingestion:app
+      --host 0.0.0.0
+      --port 8001
+      --workers 1
+      --worker-class uvicorn.workers.UvicornWorker
+      --max-requests 1000
+      --max-requests-jitter 100
+    ports:
+      - "8091:8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file: .env
+    deploy:
+      resources:
+        limits:
+          memory: 400M
+          cpus: '0.5'
+        reservations:
+          memory: 200M
+          cpus: '0.3'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  vector-search:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    command: >
+      uvicorn backend.vector_search:app
+      --host 0.0.0.0
+      --port 8002
+      --workers 1
+      --worker-class uvicorn.workers.UvicornWorker
+      --max-requests 1000
+      --max-requests-jitter 100
+    ports:
+      - "8092:8002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file: .env
+    deploy:
+      resources:
+        limits:
+          memory: 400M
+          cpus: '0.5'
+        reservations:
+          memory: 200M
+          cpus: '0.3'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  training-pipeline:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    command: >
+      uvicorn backend.training_pipeline:app
+      --host 0.0.0.0
+      --port 8003
+      --workers 1
+      --worker-class uvicorn.workers.UvicornWorker
+      --max-requests 500
+      --max-requests-jitter 50
+    ports:
+      - "8093:8003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file: .env
+    deploy:
+      resources:
+        limits:
+          memory: 400M
+          cpus: '0.5'
+        reservations:
+          memory: 200M
+          cpus: '0.3'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  embedding-worker:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    command: >
+      celery -A backend.embedding_service worker
+      --loglevel=info
+      --concurrency=2
+      --max-tasks-per-child=100
+      --time-limit=300
+      --soft-time-limit=240
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file: .env
+    deploy:
+      resources:
+        limits:
+          memory: 600M
+          cpus: '0.8'
+        reservations:
+          memory: 300M
+          cpus: '0.5'
+    restart: unless-stopped
+    environment:
+      - CELERY_WORKER_PREFETCH_MULTIPLIER=1
+      - CELERY_TASK_ACKS_LATE=true
+
+  # Lightweight monitoring
+  monitor:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    command: >
+      uvicorn backend.monitoring_analytics:app
+      --host 0.0.0.0
+      --port 8005
+      --workers 1
+    ports:
+      - "8095:8005"
+    depends_on:
+      - postgres
+      - redis
+    env_file: .env
+    deploy:
+      resources:
+        limits:
+          memory: 200M
+          cpus: '0.2'
+        reservations:
+          memory: 100M
+          cpus: '0.1'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8005/health"]
+      interval: 60s
+      timeout: 15s
+      retries: 3
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:1.24-alpine
+    ports:
+      - "8090:80"
+      - "8443:443"
+    volumes:
+      - ./nginx.4gb.conf:/etc/nginx/nginx.conf:ro
+      - ./:/var/www/html:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      - data-ingestion
+      - vector-search
+      - training-pipeline
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.2'
+        reservations:
+          memory: 64M
+          cpus: '0.1'
+    restart: unless-stopped
+
+volumes:
+  chatbot_postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  default:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
