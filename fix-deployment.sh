@@ -78,4 +78,4 @@ echo "  🔐 Auth: http://localhost:8090/auth.html"
 echo "  👤 Admin: http://localhost:8090/admin/dashboard.html"
 echo ""
 echo "🔧 If you see any issues, check logs with:"
-echo "  docker-compose -f docker-compose.minimal.yml logs [service-name]"`
+echo "  docker-compose -f docker-compose.minimal.yml logs [service-name]"
