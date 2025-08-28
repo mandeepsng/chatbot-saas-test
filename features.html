@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Features - ChatFlow AI</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary-color: #6366f1;
+            --secondary-color: #8b5cf6;
+            --accent-color: #06b6d4;
+            --text-primary: #ffffff;
+            --text-secondary: #e2e8f0;
+            --text-muted: #94a3b8;
+            --bg-primary: #0f172a;
+            --bg-secondary: rgba(15, 23, 42, 0.8);
+            --border-color: rgba(99, 102, 241, 0.2);
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+        
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        
+        .content-overlay {
+            position: relative;
+            z-index: 2;
+            background: rgba(15, 23, 42, 0.1);
+        }
+        
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 4px;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 1rem 2rem;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+            z-index: 100;
+            transition: all 0.3s ease;
+        }
+        
+        nav.scrolled {
+            background: rgba(15, 23, 42, 0.98);
+            box-shadow: 0 10px 40px rgba(99, 102, 241, 0.1);
+        }
+        
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            text-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+            text-decoration: none;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 3rem;
+            list-style: none;
+        }
+        
+        .nav-links a {
+            color: var(--text-primary);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 1rem;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--primary-color);
+            transition: width 0.3s ease;
+        }
+        
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+        
+        .nav-links a:hover {
+            color: var(--primary-color);
+        }
+        
+        .nav-cta {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: #fff;
+            padding: 0.75rem 2rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .nav-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(99, 102, 241, 0.4);
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 60vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+            padding-top: 8rem;
+            background: radial-gradient(ellipse at center, rgba(99, 102, 241, 0.05) 0%, transparent 70%);
+        }
+        
+        .hero-content {
+            max-width: 900px;
+            z-index: 10;
+            animation: fadeInUp 1s ease-out;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .hero-badge {
+            display: inline-block;
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            color: var(--primary-color);
+            padding: 0.75rem 1.5rem;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .hero h1 {
+            font-size: 4rem;
+            font-weight: 900;
+            margin-bottom: 2rem;
+            background: linear-gradient(135deg, #ffffff, var(--primary-color), var(--secondary-color));
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.1;
+        }
+        
+        .hero p {
+            font-size: 1.3rem;
+            color: var(--text-secondary);
+            margin-bottom: 3rem;
+            line-height: 1.7;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        /* Section Styles */
+        .section {
+            padding: 8rem 0;
+        }
+        
+        .section-header {
+            text-align: center;
+            margin-bottom: 6rem;
+        }
+        
+        .section-badge {
+            display: inline-block;
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--primary-color);
+            padding: 0.5rem 1.5rem;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(99, 102, 241, 0.2);
+        }
+        
+        .section-header h2 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+            line-height: 1.2;
+        }
+        
+        .section-header p {
+            font-size: 1.3rem;
+            color: var(--text-secondary);
+            max-width: 700px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* Feature Grid */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 3rem;
+            margin-bottom: 6rem;
+        }
+        
+        .feature-card {
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 20px;
+            padding: 3rem;
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .feature-card:hover::before {
+            opacity: 1;
+        }
+        
+        .feature-card:hover {
+            border-color: var(--primary-color);
+            box-shadow: 0 20px 60px rgba(99, 102, 241, 0.2);
+            transform: translateY(-10px);
+        }
+        
+        .feature-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 2rem;
+            font-size: 2rem;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .feature-card h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+            position: relative;
+            z-index: 2;
+        }
+        
+        .feature-card p {
+            color: var(--text-secondary);
+            line-height: 1.7;
+            font-size: 1.1rem;
+            position: relative;
+            z-index: 2;
+            margin-bottom: 1.5rem;
+        }
+        
+        .feature-list {
+            list-style: none;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .feature-list li {
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .feature-list li::before {
+            content: "✓";
+            color: var(--success-color);
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        /* Advanced Features Section */
+        .advanced-features {
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(99, 102, 241, 0.02));
+        }
+
+        .advanced-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2.5rem;
+        }
+
+        .advanced-card {
+            background: rgba(99, 102, 241, 0.05);
+            border: 1px solid rgba(99, 102, 241, 0.1);
+            border-radius: 20px;
+            padding: 2.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .advanced-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary-color);
+            box-shadow: 0 15px 40px rgba(99, 102, 241, 0.2);
+        }
+
+        .advanced-icon {
+            font-size: 3rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .advanced-card h3 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .advanced-card p {
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* Interactive Demo Section */
+        .demo-section {
+            background: rgba(15, 23, 42, 0.95);
+        }
+
+        .demo-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        .demo-content h2 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+        }
+
+        .demo-content p {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin-bottom: 2rem;
+        }
+
+        .demo-features {
+            list-style: none;
+            margin-bottom: 2rem;
+        }
+
+        .demo-features li {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            color: var(--text-secondary);
+        }
+
+        .demo-features li::before {
+            content: "⚡";
+            font-size: 1.2rem;
+        }
+
+        .demo-preview {
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid var(--primary-color);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(99, 102, 241, 0.3);
+        }
+
+        .demo-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            padding: 1rem 1.5rem;
+            color: white;
+            font-weight: 600;
+        }
+
+        .demo-body {
+            padding: 2rem;
+            height: 300px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .demo-message {
+            margin-bottom: 1rem;
+            padding: 1rem;
+            border-radius: 12px;
+            animation: slideInUp 0.5s ease-out;
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .demo-message.user {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            margin-left: 2rem;
+            text-align: right;
+        }
+
+        .demo-message.bot {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--text-secondary);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            margin-right: 2rem;
+        }
+
+        /* Integration Section */
+        .integrations-section {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(15, 23, 42, 0.9));
+        }
+
+        .integrations-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+        }
+
+        .integration-card {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .integration-card:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.2);
+        }
+
+        .integration-logo {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 1.5rem;
+        }
+
+        .integration-card h4 {
+            color: var(--text-primary);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .integration-card p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            padding: 8rem 2rem;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(15, 23, 42, 0.9));
+            text-align: center;
+        }
+        
+        .cta-content {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .cta-section h2 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 2rem;
+            color: var(--text-primary);
+        }
+        
+        .cta-section p {
+            font-size: 1.3rem;
+            color: var(--text-secondary);
+            margin-bottom: 3rem;
+            line-height: 1.6;
+        }
+        
+        .hero-cta {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: #fff;
+            padding: 1.2rem 3rem;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 20px 50px rgba(99, 102, 241, 0.5);
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-primary);
+            padding: 1.2rem 3rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            position: relative;
+        }
+        
+        .btn-secondary:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            transform: translateY(-3px);
+        }
+
+        /* Footer */
+        footer {
+            background: rgba(15, 23, 42, 0.98);
+            padding: 4rem 2rem 2rem;
+            border-top: 1px solid rgba(99, 102, 241, 0.2);
+        }
+        
+        .footer-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 3rem;
+        }
+        
+        .footer-section h4 {
+            color: var(--primary-color);
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            font-size: 1.2rem;
+        }
+        
+        .footer-section a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            display: block;
+            margin-bottom: 0.75rem;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+        
+        .footer-section a:hover {
+            color: var(--primary-color);
+            transform: translateX(5px);
+        }
+        
+        .footer-bottom {
+            text-align: center;
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-muted);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+            
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+            
+            .hero p {
+                font-size: 1.1rem;
+            }
+            
+            .section-header h2 {
+                font-size: 2rem;
+            }
+            
+            .cta-section h2 {
+                font-size: 2rem;
+            }
+            
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .demo-container {
+                grid-template-columns: 1fr;
+                gap: 3rem;
+            }
+            
+            .hero-cta {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .demo-content h2 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container"></div>
+
+    <div class="content-overlay">
+        <!-- Navigation -->
+        <nav id="navbar">
+            <div class="nav-container">
+                <a href="index.html" class="logo">ChatFlow AI</a>
+                <ul class="nav-links">
+                    <li><a href="features.html">Features</a></li>
+                    <li><a href="index.html#use-cases">Use Cases</a></li>
+                    <li><a href="pricing.html">Pricing</a></li>
+                    <li><a href="contact.html">Contact</a></li>
+                </ul>
+                <a href="auth/signup.html" class="nav-cta">Start Free Trial</a>
+            </div>
+        </nav>
+
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="hero-content">
+                <div class="hero-badge">🚀 Powerful • Flexible • Easy to Use</div>
+                <h1>Advanced Features for Modern Businesses</h1>
+                <p>Discover the powerful capabilities that make ChatFlow AI the perfect choice for businesses of all sizes. From intelligent conversations to seamless integrations.</p>
+            </div>
+        </section>
+
+        <!-- Core Features Section -->
+        <section class="section">
+            <div class="container">
+                <div class="section-header">
+                    <div class="section-badge">🧠 Core Intelligence</div>
+                    <h2>AI-Powered Conversational Excellence</h2>
+                    <p>Our advanced AI capabilities ensure your chatbots understand context, learn from interactions, and provide human-like responses that delight your customers.</p>
+                </div>
+                
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">🧠</div>
+                        <h3>Natural Language Processing</h3>
+                        <p>Advanced NLP powered by GPT-4 that understands context, intent, and sentiment for natural conversations.</p>
+                        <ul class="feature-list">
+                            <li>Multi-language support (95+ languages)</li>
+                            <li>Context-aware responses</li>
+                            <li>Sentiment analysis</li>
+                            <li>Intent recognition</li>
+                            <li>Entity extraction</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">🎓</div>
+                        <h3>Machine Learning</h3>
+                        <p>Continuous learning from conversations to improve response quality and customer satisfaction over time.</p>
+                        <ul class="feature-list">
+                            <li>Self-improving algorithms</li>
+                            <li>Custom model training</li>
+                            <li>Conversation analysis</li>
+                            <li>Performance optimization</li>
+                            <li>A/B testing capabilities</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">🎯</div>
+                        <h3>Smart Personalization</h3>
+                        <p>Deliver personalized experiences by leveraging customer data and conversation history.</p>
+                        <ul class="feature-list">
+                            <li>Customer profile building</li>
+                            <li>Behavioral targeting</li>
+                            <li>Dynamic content delivery</li>
+                            <li>Preference learning</li>
+                            <li>Contextual recommendations</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Advanced Features Section -->
+        <section class="section advanced-features">
+            <div class="container">
+                <div class="section-header">
+                    <div class="section-badge">⚡ Advanced Capabilities</div>
+                    <h2>Enterprise-Grade Features</h2>
+                    <p>Powerful tools and capabilities designed for businesses that need advanced functionality and enterprise-level reliability.</p>
+                </div>
+                
+                <div class="advanced-grid">
+                    <div class="advanced-card">
+                        <div class="advanced-icon">🔄</div>
+                        <h3>Multi-Channel Deployment</h3>
+                        <p>Deploy across 50+ platforms including websites, mobile apps, WhatsApp, Telegram, Slack, and more with a single click.</p>
+                    </div>
+                    
+                    <div class="advanced-card">
+                        <div class="advanced-icon">📊</div>
+                        <h3>Real-Time Analytics</h3>
+                        <p>Comprehensive dashboards with conversation insights, performance metrics, and actionable analytics.</p>
+                    </div>
+                    
+                    <div class="advanced-card">
+                        <div class="advanced-icon">🎨</div>
+                        <h3>Visual Flow Builder</h3>
+                        <p>Intuitive drag-and-drop interface to create complex conversation flows without any coding required.</p>
+                    </div>
+                    
+                    <div class="advanced-card">
+                        <div class="advanced-icon">🔗</div>
+                        <h3>API & Integrations</h3>
+                        <p>Connect with 1000+ apps including CRMs, help desks, e-commerce platforms, and custom systems.</p>
+                    </div>
+                    
+                    <div class="advanced-card">
+                        <div class="advanced-icon">🛡️</div>
+                        <h3>Enterprise Security</h3>
+                        <p>Bank-level encryption, GDPR compliance, SOC 2 certification, and advanced access controls.</p>
+                    </div>
+                    
+                    <div class="advanced-card">
+                        <div class="advanced-icon">⚡</div>
+                        <h3>Human Handoff</h3>
+                        <p>Seamless transfer to human agents with full conversation context and customer history preserved.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Interactive Demo Section -->
+        <section class="section demo-section">
+            <div class="container">
+                <div class="demo-container">
+                    <div class="demo-content">
+                        <h2>See It In Action</h2>
+                        <p>Experience the power of ChatFlow AI with this interactive demo showcasing our natural language processing and intelligent response capabilities.</p>
+                        
+                        <ul class="demo-features">
+                            <li>Context-aware conversations</li>
+                            <li>Intelligent product recommendations</li>
+                            <li>Order tracking and support</li>
+                            <li>Lead qualification</li>
+                            <li>Smooth human handoff</li>
+                        </ul>
+                        
+                        <div class="hero-cta">
+                            <a href="auth/signup.html" class="btn-primary">Try It Yourself</a>
+                        </div>
+                    </div>
+                    
+                    <div class="demo-preview">
+                        <div class="demo-header">
+                            🤖 ChatFlow Assistant - Live Demo
+                        </div>
+                        <div class="demo-body" id="demoMessages">
+                            <div class="demo-message bot">
+                                Hi! I'm ChatFlow AI. I can help you with product information, orders, and support. What would you like to know?
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Integrations Section -->
+        <section class="section integrations-section">
+            <div class="container">
+                <div class="section-header">
+                    <div class="section-badge">🔗 Integrations</div>
+                    <h2>Connect Everything</h2>
+                    <p>Seamlessly integrate with your existing tools and platforms to create a unified customer experience.</p>
+                </div>
+                
+                <div class="integrations-grid">
+                    <div class="integration-card">
+                        <div class="integration-logo">💬</div>
+                        <h4>WhatsApp Business</h4>
+                        <p>Native integration</p>
+                    </div>
+                    
+                    <div class="integration-card">
+                        <div class="integration-logo">📱</div>
+                        <h4>Telegram</h4>
+                        <p>Bot API support</p>
+                    </div>
+                    
+                    <div class="integration-card">
+                        <div class="integration-logo">💼</div>
+                        <h4>Slack</h4>
+                        <p>Workspace integration</p>
+                    </div>
+                    
+                    <div class="integration-card">
+                        <div class="integration-logo">🏪</div>
+                        <h4>Shopify</h4>
+                        <p>E-commerce support</p>
+                    </div>
+                    
+                    <div class="integration-card">
+                        <div class="integration-logo">📊</div>
+                        <h4>Salesforce</h4>
+                        <p>CRM integration</p>
+                    </div>
+                    
+                    <div class="integration-card">
+                        <div class="integration-logo">🎫</div>
+                        <h4>Zendesk</h4>
+                        <p>Support ticketing</p>
+                    </div>
+                    
+                    <div class="integration-card">
+                        <div class="integration-logo">📧</div>
+                        <h4>Mailchimp</h4>
+                        <p>Email marketing</p>
+                    </div>
+                    
+                    <div class="integration-card">
+                        <div class="integration-logo">📈</div>
+                        <h4>Google Analytics</h4>
+                        <p>Conversation tracking</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="cta-section">
+            <div class="cta-content">
+                <h2>Ready to Experience These Features?</h2>
+                <p>Join thousands of businesses using ChatFlow AI to automate support, increase sales, and delight customers with intelligent conversations.</p>
+                <div class="hero-cta">
+                    <a href="auth/signup.html" class="btn-primary">Start Your Free Trial</a>
+                    <a href="contact.html" class="btn-secondary">Schedule Demo</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer>
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>Product</h4>
+                    <a href="features.html">Features</a>
+                    <a href="pricing.html">Pricing</a>
+                    <a href="integrations.html">Integrations</a>
+                    <a href="documentation.html">API Documentation</a>
+                    <a href="case-studies.html">Case Studies</a>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Solutions</h4>
+                    <a href="#">Customer Support</a>
+                    <a href="#">Lead Generation</a>
+                    <a href="#">E-commerce</a>
+                    <a href="#">Healthcare</a>
+                    <a href="#">Education</a>
+                    <a href="#">Enterprise</a>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Resources</h4>
+                    <a href="documentation.html">Documentation</a>
+                    <a href="#">Help Center</a>
+                    <a href="#">Blog</a>
+                    <a href="case-studies.html">Case Studies</a>
+                    <a href="#">Webinars</a>
+                    <a href="#">Community</a>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Company</h4>
+                    <a href="about.html">About Us</a>
+                    <a href="#">Careers</a>
+                    <a href="#">Press</a>
+                    <a href="#">Partners</a>
+                    <a href="contact.html">Contact</a>
+                    <a href="privacy.html">Privacy Policy</a>
+                    <a href="terms.html">Terms of Service</a>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2024 ChatFlow AI Technologies. All rights reserved. Empowering conversations with artificial intelligence.</p>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // Three.js setup for animated background
+        let scene, camera, renderer, particles, mouseX = 0, mouseY = 0;
+        
+        function initThreeJS() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+            
+            createParticleSystem();
+            
+            camera.position.z = 100;
+            animate();
+        }
+        
+        function createParticleSystem() {
+            const geometry = new THREE.BufferGeometry();
+            const particleCount = 1500;
+            const positions = new Float32Array(particleCount * 3);
+            const velocities = new Float32Array(particleCount * 3);
+            const colors = new Float32Array(particleCount * 3);
+            
+            for (let i = 0; i < particleCount * 3; i += 3) {
+                positions[i] = (Math.random() - 0.5) * 300;
+                positions[i + 1] = (Math.random() - 0.5) * 300;
+                positions[i + 2] = (Math.random() - 0.5) * 300;
+                
+                velocities[i] = (Math.random() - 0.5) * 0.02;
+                velocities[i + 1] = (Math.random() - 0.5) * 0.02;
+                velocities[i + 2] = (Math.random() - 0.5) * 0.02;
+                
+                colors[i] = 0.39 * (Math.random() * 0.6 + 0.4);
+                colors[i + 1] = 0.4 * (Math.random() * 0.6 + 0.4);
+                colors[i + 2] = 0.94 * (Math.random() * 0.6 + 0.4);
+            }
+            
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('velocity', new THREE.BufferAttribute(velocities, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            
+            const material = new THREE.PointsMaterial({
+                size: 2,
+                transparent: true,
+                opacity: 0.6,
+                vertexColors: true,
+                blending: THREE.AdditiveBlending
+            });
+            
+            particles = new THREE.Points(geometry, material);
+            scene.add(particles);
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const targetX = mouseX * 0.0005;
+            const targetY = mouseY * 0.0005;
+            
+            if (particles) {
+                particles.rotation.x += (targetY - particles.rotation.x) * 0.02;
+                particles.rotation.y += (targetX - particles.rotation.y) * 0.02;
+                
+                const positions = particles.geometry.attributes.position.array;
+                const velocities = particles.geometry.attributes.velocity.array;
+                
+                for (let i = 0; i < positions.length; i += 3) {
+                    positions[i] += velocities[i];
+                    positions[i + 1] += velocities[i + 1];
+                    positions[i + 2] += velocities[i + 2];
+                    
+                    if (positions[i] > 150) positions[i] = -150;
+                    if (positions[i] < -150) positions[i] = 150;
+                    if (positions[i + 1] > 150) positions[i + 1] = -150;
+                    if (positions[i + 1] < -150) positions[i + 1] = 150;
+                    if (positions[i + 2] > 150) positions[i + 2] = -150;
+                    if (positions[i + 2] < -150) positions[i + 2] = 150;
+                }
+                
+                particles.geometry.attributes.position.needsUpdate = true;
+            }
+            
+            renderer.render(scene, camera);
+        }
+        
+        // Mouse tracking
+        document.addEventListener('mousemove', (event) => {
+            mouseX = event.clientX - window.innerWidth / 2;
+            mouseY = event.clientY - window.innerHeight / 2;
+        });
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        
+        // Navbar scroll effect
+        window.addEventListener('scroll', () => {
+            const navbar = document.getElementById('navbar');
+            if (window.scrollY > 100) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+
+        // Demo chat simulation
+        const demoMessages = [
+            { type: 'user', text: 'I\'m looking for a new laptop for work' },
+            { type: 'bot', text: 'I\'d be happy to help you find the perfect laptop! What type of work will you be using it for? Programming, design, general office tasks?' },
+            { type: 'user', text: 'Mainly programming and some light video editing' },
+            { type: 'bot', text: 'Perfect! Based on your needs, I recommend laptops with at least 16GB RAM and a dedicated graphics card. Here are our top 3 picks:\n\n• MacBook Pro 16" - $2,499\n• Dell XPS 15 - $1,899\n• ThinkPad X1 Extreme - $2,199\n\nWould you like detailed specs for any of these?' },
+            { type: 'user', text: 'Tell me more about the Dell XPS 15' },
+            { type: 'bot', text: 'Great choice! The Dell XPS 15 features:\n\n• Intel Core i7-12700H processor\n• 16GB DDR5 RAM (upgradeable to 64GB)\n• NVIDIA GeForce RTX 3050 Ti\n• 15.6" 4K OLED display\n• 1TB SSD storage\n• 8+ hour battery life\n\nIt\'s perfect for programming and video editing. Would you like me to check availability and current promotions?' }
+        ];
+
+        let currentDemoIndex = 0;
+
+        function addDemoMessage() {
+            if (currentDemoIndex >= demoMessages.length) {
+                setTimeout(() => {
+                    document.getElementById('demoMessages').innerHTML = '<div class="demo-message bot">Hi! I\'m ChatFlow AI. I can help you with product information, orders, and support. What would you like to know?</div>';
+                    currentDemoIndex = 0;
+                    setTimeout(addDemoMessage, 3000);
+                }, 5000);
+                return;
+            }
+
+            const message = demoMessages[currentDemoIndex];
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `demo-message ${message.type}`;
+            messageDiv.textContent = message.text;
+            
+            document.getElementById('demoMessages').appendChild(messageDiv);
+            document.getElementById('demoMessages').scrollTop = document.getElementById('demoMessages').scrollHeight;
+            
+            currentDemoIndex++;
+            setTimeout(addDemoMessage, message.type === 'user' ? 2000 : 3000);
+        }
+
+        // Initialize
+        initThreeJS();
+        
+        // Start demo animation
+        setTimeout(() => {
+            addDemoMessage();
+        }, 3000);
+    </script>
+</body>
+</html>

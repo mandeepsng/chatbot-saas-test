@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pricing - ChatFlow AI</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary-color: #6366f1;
+            --secondary-color: #8b5cf6;
+            --accent-color: #06b6d4;
+            --text-primary: #ffffff;
+            --text-secondary: #e2e8f0;
+            --text-muted: #94a3b8;
+            --bg-primary: #0f172a;
+            --bg-secondary: rgba(15, 23, 42, 0.8);
+            --border-color: rgba(99, 102, 241, 0.2);
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+        
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        
+        .content-overlay {
+            position: relative;
+            z-index: 2;
+            background: rgba(15, 23, 42, 0.1);
+        }
+        
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 4px;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 1rem 2rem;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+            z-index: 100;
+            transition: all 0.3s ease;
+        }
+        
+        nav.scrolled {
+            background: rgba(15, 23, 42, 0.98);
+            box-shadow: 0 10px 40px rgba(99, 102, 241, 0.1);
+        }
+        
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            text-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+            text-decoration: none;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 3rem;
+            list-style: none;
+        }
+        
+        .nav-links a {
+            color: var(--text-primary);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 1rem;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--primary-color);
+            transition: width 0.3s ease;
+        }
+        
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+        
+        .nav-links a:hover {
+            color: var(--primary-color);
+        }
+        
+        .nav-cta {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: #fff;
+            padding: 0.75rem 2rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .nav-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(99, 102, 241, 0.4);
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 60vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+            padding-top: 8rem;
+            background: radial-gradient(ellipse at center, rgba(99, 102, 241, 0.05) 0%, transparent 70%);
+        }
+        
+        .hero-content {
+            max-width: 800px;
+            z-index: 10;
+        }
+        
+        .hero-badge {
+            display: inline-block;
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            color: var(--primary-color);
+            padding: 0.75rem 1.5rem;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .hero h1 {
+            font-size: 4rem;
+            font-weight: 900;
+            margin-bottom: 2rem;
+            background: linear-gradient(135deg, #ffffff, var(--primary-color), var(--secondary-color));
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.1;
+        }
+        
+        .hero p {
+            font-size: 1.3rem;
+            color: var(--text-secondary);
+            margin-bottom: 3rem;
+            line-height: 1.7;
+        }
+
+        /* Pricing Section */
+        .pricing {
+            padding: 6rem 2rem;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.03), rgba(15, 23, 42, 0.9));
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .pricing-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 4rem;
+            gap: 1rem;
+        }
+        
+        .toggle-label {
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            width: 60px;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .toggle-switch.active {
+            background: var(--primary-color);
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 24px;
+            height: 24px;
+            background: white;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+        
+        .toggle-switch.active .toggle-slider {
+            transform: translateX(30px);
+        }
+        
+        .annual-badge {
+            background: linear-gradient(135deg, var(--success-color), #059669);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin-left: 1rem;
+        }
+        
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 3rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .pricing-card {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 25px;
+            padding: 3rem 2.5rem;
+            text-align: center;
+            position: relative;
+            transition: all 0.4s ease;
+            overflow: hidden;
+        }
+        
+        .pricing-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .pricing-card:hover::before {
+            opacity: 1;
+        }
+        
+        .pricing-card.featured {
+            border-color: var(--primary-color);
+            box-shadow: 0 30px 80px rgba(99, 102, 241, 0.3);
+            transform: scale(1.05);
+        }
+        
+        .pricing-card:hover {
+            transform: translateY(-15px);
+            box-shadow: 0 25px 70px rgba(99, 102, 241, 0.2);
+        }
+        
+        .pricing-card.featured:hover {
+            transform: scale(1.05) translateY(-15px);
+        }
+        
+        .pricing-badge {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: #fff;
+            padding: 0.75rem 2rem;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
+        
+        .pricing-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 2rem;
+            font-size: 2rem;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .pricing-card h3 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+            position: relative;
+            z-index: 2;
+        }
+        
+        .pricing-description {
+            color: var(--text-muted);
+            font-size: 1rem;
+            margin-bottom: 2rem;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .pricing-price {
+            font-size: 4rem;
+            font-weight: 900;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+            font-family: 'JetBrains Mono', monospace;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .pricing-period {
+            color: var(--text-secondary);
+            margin-bottom: 3rem;
+            font-size: 1.1rem;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .pricing-features {
+            list-style: none;
+            margin-bottom: 3rem;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .pricing-features li {
+            padding: 0.75rem 0;
+            color: var(--text-secondary);
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            text-align: left;
+        }
+        
+        .pricing-features li:before {
+            content: "✓";
+            color: var(--success-color);
+            font-weight: bold;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: #fff;
+            padding: 1.2rem 2rem;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            position: relative;
+            overflow: hidden;
+            z-index: 2;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 20px 50px rgba(99, 102, 241, 0.5);
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-primary);
+            padding: 1.2rem 2rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .btn-secondary:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            transform: translateY(-3px);
+        }
+
+        /* FAQ Section */
+        .faq {
+            padding: 6rem 2rem;
+            background: rgba(15, 23, 42, 0.95);
+        }
+        
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+        
+        .section-badge {
+            display: inline-block;
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--primary-color);
+            padding: 0.5rem 1.5rem;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(99, 102, 241, 0.2);
+        }
+        
+        .section-header h2 {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+            line-height: 1.2;
+        }
+        
+        .faq-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .faq-item {
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .faq-item:hover {
+            border-color: var(--primary-color);
+        }
+        
+        .faq-question {
+            padding: 2rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .faq-answer {
+            padding: 0 2rem 2rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            display: none;
+        }
+        
+        .faq-item.active .faq-answer {
+            display: block;
+        }
+        
+        .faq-toggle {
+            font-size: 1.5rem;
+            transition: transform 0.3s ease;
+        }
+        
+        .faq-item.active .faq-toggle {
+            transform: rotate(45deg);
+        }
+
+        /* CTA Section */
+        .cta-section {
+            padding: 6rem 2rem;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(15, 23, 42, 0.9));
+            text-align: center;
+        }
+        
+        .cta-content {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .cta-section h2 {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 2rem;
+            color: var(--text-primary);
+        }
+        
+        .cta-section p {
+            font-size: 1.3rem;
+            color: var(--text-secondary);
+            margin-bottom: 3rem;
+            line-height: 1.6;
+        }
+        
+        .hero-cta {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        /* Footer */
+        footer {
+            background: rgba(15, 23, 42, 0.98);
+            padding: 4rem 2rem 2rem;
+            border-top: 1px solid rgba(99, 102, 241, 0.2);
+        }
+        
+        .footer-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 3rem;
+        }
+        
+        .footer-section h4 {
+            color: var(--primary-color);
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            font-size: 1.2rem;
+        }
+        
+        .footer-section a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            display: block;
+            margin-bottom: 0.75rem;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+        
+        .footer-section a:hover {
+            color: var(--primary-color);
+            transform: translateX(5px);
+        }
+        
+        .footer-bottom {
+            text-align: center;
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-muted);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+            
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+            
+            .hero p {
+                font-size: 1.1rem;
+            }
+            
+            .pricing-card.featured {
+                transform: none;
+            }
+            
+            .pricing-card.featured:hover {
+                transform: translateY(-15px);
+            }
+            
+            .section-header h2 {
+                font-size: 2rem;
+            }
+            
+            .cta-section h2 {
+                font-size: 2rem;
+            }
+            
+            .pricing-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .hero-cta {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container"></div>
+
+    <div class="content-overlay">
+        <!-- Navigation -->
+        <nav id="navbar">
+            <div class="nav-container">
+                <a href="index.html" class="logo">ChatFlow AI</a>
+                <ul class="nav-links">
+                    <li><a href="index.html#features">Features</a></li>
+                    <li><a href="index.html#use-cases">Use Cases</a></li>
+                    <li><a href="pricing.html">Pricing</a></li>
+                    <li><a href="contact.html">Contact</a></li>
+                </ul>
+                <a href="auth/signup.html" class="nav-cta">Start Free Trial</a>
+            </div>
+        </nav>
+
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="hero-content">
+                <div class="hero-badge">💰 Transparent • Flexible • No Hidden Fees</div>
+                <h1>Simple, Transparent Pricing</h1>
+                <p>Choose the perfect plan for your business. Scale as you grow with our flexible pricing options.</p>
+            </div>
+        </section>
+
+        <!-- Pricing Section -->
+        <section class="pricing">
+            <div class="container">
+                <div class="pricing-toggle">
+                    <span class="toggle-label">Monthly</span>
+                    <div class="toggle-switch" id="billingToggle">
+                        <div class="toggle-slider"></div>
+                    </div>
+                    <span class="toggle-label">Annual</span>
+                    <span class="annual-badge">Save 25%</span>
+                </div>
+                
+                <div class="pricing-grid">
+                    <div class="pricing-card">
+                        <div class="pricing-icon">🚀</div>
+                        <h3>Starter</h3>
+                        <p class="pricing-description">Perfect for small businesses getting started</p>
+                        <div class="pricing-price" id="starterPrice">$29</div>
+                        <div class="pricing-period">per month</div>
+                        <ul class="pricing-features">
+                            <li>1,000 conversations/month</li>
+                            <li>1 chatbot</li>
+                            <li>Basic NLP capabilities</li>
+                            <li>Web widget integration</li>
+                            <li>Email support</li>
+                            <li>Basic analytics dashboard</li>
+                            <li>Mobile responsive design</li>
+                            <li>Standard response time</li>
+                        </ul>
+                        <a href="auth/signup.html" class="btn-secondary">Get Started</a>
+                    </div>
+                    
+                    <div class="pricing-card featured">
+                        <div class="pricing-badge">Most Popular</div>
+                        <div class="pricing-icon">⭐</div>
+                        <h3>Professional</h3>
+                        <p class="pricing-description">Advanced features for growing businesses</p>
+                        <div class="pricing-price" id="proPrice">$99</div>
+                        <div class="pricing-period">per month</div>
+                        <ul class="pricing-features">
+                            <li>10,000 conversations/month</li>
+                            <li>5 chatbots</li>
+                            <li>Advanced AI (GPT-4)</li>
+                            <li>Multi-channel deployment</li>
+                            <li>Priority support</li>
+                            <li>Advanced analytics & reports</li>
+                            <li>Custom integrations</li>
+                            <li>Lead generation tools</li>
+                            <li>A/B testing features</li>
+                            <li>Team collaboration tools</li>
+                        </ul>
+                        <a href="auth/signup.html" class="btn-primary">Start Free Trial</a>
+                    </div>
+                    
+                    <div class="pricing-card">
+                        <div class="pricing-icon">🏢</div>
+                        <h3>Enterprise</h3>
+                        <p class="pricing-description">Custom solutions for large organizations</p>
+                        <div class="pricing-price" id="enterprisePrice">$299</div>
+                        <div class="pricing-period">per month</div>
+                        <ul class="pricing-features">
+                            <li>Unlimited conversations</li>
+                            <li>Unlimited chatbots</li>
+                            <li>Custom AI training</li>
+                            <li>White-label solution</li>
+                            <li>Dedicated support manager</li>
+                            <li>Custom analytics & reporting</li>
+                            <li>Full API access</li>
+                            <li>On-premise deployment</li>
+                            <li>SSO & advanced security</li>
+                            <li>Custom integrations</li>
+                            <li>SLA guarantees</li>
+                            <li>24/7 phone support</li>
+                        </ul>
+                        <a href="contact.html" class="btn-secondary">Contact Sales</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FAQ Section -->
+        <section class="faq">
+            <div class="container">
+                <div class="section-header">
+                    <div class="section-badge">❓ Frequently Asked Questions</div>
+                    <h2>Got Questions? We've Got Answers</h2>
+                </div>
+                
+                <div class="faq-container">
+                    <div class="faq-item">
+                        <div class="faq-question" onclick="toggleFAQ(this)">
+                            What happens if I exceed my conversation limit?
+                            <span class="faq-toggle">+</span>
+                        </div>
+                        <div class="faq-answer">
+                            Don't worry! We'll notify you when you're approaching your limit. You can upgrade your plan or purchase additional conversation packs. We never cut off your service unexpectedly.
+                        </div>
+                    </div>
+                    
+                    <div class="faq-item">
+                        <div class="faq-question" onclick="toggleFAQ(this)">
+                            Can I change plans at any time?
+                            <span class="faq-toggle">+</span>
+                        </div>
+                        <div class="faq-answer">
+                            Absolutely! You can upgrade or downgrade your plan at any time. Changes take effect immediately, and we'll prorate any billing differences.
+                        </div>
+                    </div>
+                    
+                    <div class="faq-item">
+                        <div class="faq-question" onclick="toggleFAQ(this)">
+                            Is there a free trial available?
+                            <span class="faq-toggle">+</span>
+                        </div>
+                        <div class="faq-answer">
+                            Yes! We offer a 14-day free trial on our Professional plan with no credit card required. You'll have full access to all features during the trial period.
+                        </div>
+                    </div>
+                    
+                    <div class="faq-item">
+                        <div class="faq-question" onclick="toggleFAQ(this)">
+                            What kind of support do you provide?
+                            <span class="faq-toggle">+</span>
+                        </div>
+                        <div class="faq-answer">
+                            We provide comprehensive support including email support for all plans, priority support for Professional users, and dedicated support managers for Enterprise customers. Our knowledge base and video tutorials are available 24/7.
+                        </div>
+                    </div>
+                    
+                    <div class="faq-item">
+                        <div class="faq-question" onclick="toggleFAQ(this)">
+                            Do you offer custom pricing for high-volume users?
+                            <span class="faq-toggle">+</span>
+                        </div>
+                        <div class="faq-answer">
+                            Yes! If you need more than what our Enterprise plan offers, we'd love to create a custom solution for you. Contact our sales team to discuss your specific requirements.
+                        </div>
+                    </div>
+                    
+                    <div class="faq-item">
+                        <div class="faq-question" onclick="toggleFAQ(this)">
+                            What payment methods do you accept?
+                            <span class="faq-toggle">+</span>
+                        </div>
+                        <div class="faq-answer">
+                            We accept all major credit cards (Visa, MasterCard, American Express), PayPal, and wire transfers for Enterprise customers. All payments are processed securely through Stripe.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="cta-section">
+            <div class="cta-content">
+                <h2>Ready to Get Started?</h2>
+                <p>Join thousands of businesses using ChatFlow AI to automate support and increase customer satisfaction.</p>
+                <div class="hero-cta">
+                    <a href="auth/signup.html" class="btn-primary">Start Your Free Trial</a>
+                    <a href="contact.html" class="btn-secondary">Talk to Sales</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer>
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>Product</h4>
+                    <a href="features.html">Features</a>
+                    <a href="pricing.html">Pricing</a>
+                    <a href="integrations.html">Integrations</a>
+                    <a href="documentation.html">API Documentation</a>
+                    <a href="case-studies.html">Case Studies</a>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Solutions</h4>
+                    <a href="#">Customer Support</a>
+                    <a href="#">Lead Generation</a>
+                    <a href="#">E-commerce</a>
+                    <a href="#">Healthcare</a>
+                    <a href="#">Education</a>
+                    <a href="#">Enterprise</a>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Resources</h4>
+                    <a href="documentation.html">Documentation</a>
+                    <a href="#">Help Center</a>
+                    <a href="#">Blog</a>
+                    <a href="case-studies.html">Case Studies</a>
+                    <a href="#">Webinars</a>
+                    <a href="#">Community</a>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Company</h4>
+                    <a href="about.html">About Us</a>
+                    <a href="#">Careers</a>
+                    <a href="#">Press</a>
+                    <a href="#">Partners</a>
+                    <a href="contact.html">Contact</a>
+                    <a href="privacy.html">Privacy Policy</a>
+                    <a href="terms.html">Terms of Service</a>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2024 ChatFlow AI Technologies. All rights reserved. Empowering conversations with artificial intelligence.</p>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // Three.js setup for animated background
+        let scene, camera, renderer, particles, mouseX = 0, mouseY = 0;
+        
+        function initThreeJS() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+            
+            createParticleSystem();
+            
+            camera.position.z = 100;
+            animate();
+        }
+        
+        function createParticleSystem() {
+            const geometry = new THREE.BufferGeometry();
+            const particleCount = 1500;
+            const positions = new Float32Array(particleCount * 3);
+            const velocities = new Float32Array(particleCount * 3);
+            const colors = new Float32Array(particleCount * 3);
+            
+            for (let i = 0; i < particleCount * 3; i += 3) {
+                positions[i] = (Math.random() - 0.5) * 300;
+                positions[i + 1] = (Math.random() - 0.5) * 300;
+                positions[i + 2] = (Math.random() - 0.5) * 300;
+                
+                velocities[i] = (Math.random() - 0.5) * 0.02;
+                velocities[i + 1] = (Math.random() - 0.5) * 0.02;
+                velocities[i + 2] = (Math.random() - 0.5) * 0.02;
+                
+                colors[i] = 0.39 * (Math.random() * 0.6 + 0.4);
+                colors[i + 1] = 0.4 * (Math.random() * 0.6 + 0.4);
+                colors[i + 2] = 0.94 * (Math.random() * 0.6 + 0.4);
+            }
+            
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('velocity', new THREE.BufferAttribute(velocities, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            
+            const material = new THREE.PointsMaterial({
+                size: 2,
+                transparent: true,
+                opacity: 0.6,
+                vertexColors: true,
+                blending: THREE.AdditiveBlending
+            });
+            
+            particles = new THREE.Points(geometry, material);
+            scene.add(particles);
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const targetX = mouseX * 0.0005;
+            const targetY = mouseY * 0.0005;
+            
+            if (particles) {
+                particles.rotation.x += (targetY - particles.rotation.x) * 0.02;
+                particles.rotation.y += (targetX - particles.rotation.y) * 0.02;
+                
+                const positions = particles.geometry.attributes.position.array;
+                const velocities = particles.geometry.attributes.velocity.array;
+                
+                for (let i = 0; i < positions.length; i += 3) {
+                    positions[i] += velocities[i];
+                    positions[i + 1] += velocities[i + 1];
+                    positions[i + 2] += velocities[i + 2];
+                    
+                    if (positions[i] > 150) positions[i] = -150;
+                    if (positions[i] < -150) positions[i] = 150;
+                    if (positions[i + 1] > 150) positions[i + 1] = -150;
+                    if (positions[i + 1] < -150) positions[i + 1] = 150;
+                    if (positions[i + 2] > 150) positions[i + 2] = -150;
+                    if (positions[i + 2] < -150) positions[i + 2] = 150;
+                }
+                
+                particles.geometry.attributes.position.needsUpdate = true;
+            }
+            
+            renderer.render(scene, camera);
+        }
+        
+        // Mouse tracking
+        document.addEventListener('mousemove', (event) => {
+            mouseX = event.clientX - window.innerWidth / 2;
+            mouseY = event.clientY - window.innerHeight / 2;
+        });
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        
+        // Navbar scroll effect
+        window.addEventListener('scroll', () => {
+            const navbar = document.getElementById('navbar');
+            if (window.scrollY > 100) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+        
+        // Pricing toggle functionality
+        const billingToggle = document.getElementById('billingToggle');
+        const starterPrice = document.getElementById('starterPrice');
+        const proPrice = document.getElementById('proPrice');
+        const enterprisePrice = document.getElementById('enterprisePrice');
+        
+        const monthlyPrices = { starter: 29, pro: 99, enterprise: 299 };
+        const annualPrices = { starter: 22, pro: 74, enterprise: 224 };
+        
+        billingToggle.addEventListener('click', () => {
+            billingToggle.classList.toggle('active');
+            const isAnnual = billingToggle.classList.contains('active');
+            
+            if (isAnnual) {
+                starterPrice.textContent = `$${annualPrices.starter}`;
+                proPrice.textContent = `$${annualPrices.pro}`;
+                enterprisePrice.textContent = `$${annualPrices.enterprise}`;
+            } else {
+                starterPrice.textContent = `$${monthlyPrices.starter}`;
+                proPrice.textContent = `$${monthlyPrices.pro}`;
+                enterprisePrice.textContent = `$${monthlyPrices.enterprise}`;
+            }
+        });
+        
+        // FAQ toggle functionality
+        function toggleFAQ(element) {
+            const faqItem = element.parentElement;
+            const isActive = faqItem.classList.contains('active');
+            
+            // Close all FAQ items
+            document.querySelectorAll('.faq-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Open clicked item if it wasn't active
+            if (!isActive) {
+                faqItem.classList.add('active');
+            }
+        }
+        
+        // Initialize
+        initThreeJS();
+    </script>
+</body>
+</html>

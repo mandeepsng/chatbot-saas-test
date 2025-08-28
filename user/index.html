@@ -1,0 +1,3755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatFlow AI - Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary-color: #6366f1;
+            --secondary-color: #8b5cf6;
+            --accent-color: #06b6d4;
+            --text-primary: #ffffff;
+            --text-secondary: #e2e8f0;
+            --text-muted: #94a3b8;
+            --bg-primary: #0f172a;
+            --bg-secondary: rgba(15, 23, 42, 0.8);
+            --bg-card: rgba(15, 23, 42, 0.9);
+            --border-color: rgba(99, 102, 241, 0.2);
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --error-color: #ef4444;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+        
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        
+        .dashboard-container {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Color Customization Panel */
+        .color-panel {
+            position: fixed;
+            top: 50%;
+            left: -280px;
+            transform: translateY(-50%);
+            width: 280px;
+            background: rgba(15, 23, 42, 0.98);
+            border: 1px solid var(--primary-color);
+            border-radius: 0 20px 20px 0;
+            padding: 2rem;
+            z-index: 1001;
+            transition: left 0.3s ease;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        .color-panel.open {
+            left: 0;
+        }
+        
+        .color-panel-toggle {
+            position: absolute;
+            right: -50px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 50px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border: none;
+            border-radius: 0 15px 15px 0;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .color-panel-toggle:hover {
+            transform: translateY(-50%) scale(1.1);
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
+        }
+        
+        .color-panel h3 {
+            color: var(--primary-color);
+            font-size: 1.3rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            font-weight: 700;
+        }
+        
+        .color-scheme {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 1rem;
+            border: 2px solid transparent;
+        }
+        
+        .color-scheme:hover {
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateX(5px);
+        }
+        
+        .color-scheme.active {
+            border-color: var(--primary-color);
+            background: rgba(99, 102, 241, 0.1);
+        }
+        
+        .color-preview {
+            display: flex;
+            gap: 4px;
+        }
+        
+        .color-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .scheme-name {
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+        
+        .reset-btn {
+            width: 100%;
+            background: transparent;
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
+            padding: 0.75rem;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+        }
+        
+        .reset-btn:hover {
+            background: var(--primary-color);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: var(--bg-card);
+            border-right: 1px solid var(--border-color);
+            backdrop-filter: blur(20px);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+            z-index: 100;
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar.collapsed {
+            width: 80px;
+        }
+        
+        .sidebar-header {
+            padding: 2rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .logo {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            text-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+        }
+        
+        .sidebar-toggle {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            margin-left: auto;
+        }
+        
+        .sidebar-toggle:hover {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--primary-color);
+        }
+        
+        .sidebar-nav {
+            flex: 1;
+            padding: 1rem 0;
+        }
+        
+        .nav-section {
+            margin-bottom: 2rem;
+        }
+        
+        .nav-section-title {
+            padding: 0 2rem 0.5rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 2rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border-left: 3px solid transparent;
+        }
+        
+        .nav-item:hover {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--primary-color);
+            border-left-color: var(--primary-color);
+        }
+        
+        .nav-item.active {
+            background: rgba(99, 102, 241, 0.2);
+            color: var(--primary-color);
+            border-left-color: var(--primary-color);
+        }
+        
+        .nav-icon {
+            font-size: 1.2rem;
+            width: 24px;
+            text-align: center;
+        }
+        
+        .nav-text {
+            font-weight: 500;
+        }
+        
+        .sidebar.collapsed .nav-text,
+        .sidebar.collapsed .nav-section-title,
+        .sidebar.collapsed .logo {
+            display: none;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            background: rgba(15, 23, 42, 0.1);
+            min-height: 100vh;
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar.collapsed + .main-content {
+            margin-left: 80px;
+        }
+        
+        .content-header {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+            padding: 2rem;
+            backdrop-filter: blur(20px);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+        
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .page-title {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--text-primary);
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        
+        .breadcrumb a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+        
+        .content-body {
+            padding: 2rem;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 2rem;
+            backdrop-filter: blur(20px);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .card:hover::before {
+            opacity: 1;
+        }
+        
+        .card:hover {
+            border-color: var(--primary-color);
+            box-shadow: 0 20px 60px rgba(99, 102, 241, 0.2);
+            transform: translateY(-5px);
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: none;
+            font-size: 0.95rem;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-secondary);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .btn-secondary:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            background: rgba(99, 102, 241, 0.1);
+        }
+        
+        .btn-success {
+            background: var(--success-color);
+            color: white;
+        }
+        
+        .btn-warning {
+            background: var(--warning-color);
+            color: white;
+        }
+        
+        .btn-error {
+            background: var(--error-color);
+            color: white;
+        }
+        
+        /* Usage & Limits Styles */
+        .usage-metric {
+            text-align: center;
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 15px;
+        }
+        
+        .usage-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .usage-label {
+            color: var(--text-secondary);
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        
+        .usage-limit {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+        
+        .usage-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .usage-progress {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+        
+        .plan-details {
+            text-align: center;
+        }
+        
+        .plan-current {
+            margin-bottom: 2rem;
+        }
+        
+        .plan-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .plan-price {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--primary-color);
+        }
+        
+        .plan-features {
+            text-align: left;
+            margin-bottom: 2rem;
+        }
+        
+        .plan-feature {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+            color: var(--text-secondary);
+        }
+        
+        .feature-icon {
+            font-size: 1.1rem;
+        }
+        
+        .alert-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .alert-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .alert-item.warning {
+            background: rgba(245, 158, 11, 0.1);
+            border-color: rgba(245, 158, 11, 0.3);
+        }
+        
+        .alert-icon {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+        
+        .alert-content {
+            flex: 1;
+        }
+        
+        .alert-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .alert-message {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        
+        .alert-actions {
+            display: flex;
+            gap: 0.75rem;
+            flex-shrink: 0;
+        }
+        
+        /* Billing Styles */
+        .subscription-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 2rem;
+        }
+        
+        .subscription-plan {
+            flex: 1;
+        }
+        
+        .plan-badge {
+            display: inline-block;
+            background: var(--primary-color);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        
+        .plan-price span {
+            font-size: 1rem;
+            color: var(--text-muted);
+        }
+        
+        .plan-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+        }
+        
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+        
+        .status-indicator.active {
+            background: var(--success-color);
+        }
+        
+        .subscription-actions {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .plans-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+        
+        .plan-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 15px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+        }
+        
+        .plan-card:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+        
+        .plan-card.current {
+            border-color: var(--primary-color);
+            background: rgba(99, 102, 241, 0.05);
+        }
+        
+        .plan-header {
+            text-align: center;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+        
+        .plan-card .plan-badge {
+            position: absolute;
+            top: -1rem;
+            right: -1rem;
+            background: var(--success-color);
+        }
+        
+        .payment-method {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        
+        .payment-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+        }
+        
+        .card-info {
+            flex: 1;
+        }
+        
+        .card-type {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+        
+        .card-number {
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+        }
+        
+        .card-expiry {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        
+        .card-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+        
+        .billing-address .address-info {
+            line-height: 1.6;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+        
+        /* Team Management Styles */
+        .team-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+        }
+        
+        .team-stat {
+            text-align: center;
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 15px;
+        }
+        
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        
+        .permissions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+        
+        .permission-role {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 15px;
+            padding: 1.5rem;
+        }
+        
+        .permission-role h4 {
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+        
+        .permissions-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .permission-item {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        /* Grid Layouts */
+        .grid {
+            display: grid;
+            gap: 2rem;
+        }
+        
+        .grid-2 {
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        }
+        
+        .grid-3 {
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        }
+        
+        .grid-4 {
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+        
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 1.5rem;
+        }
+        
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .stat-label {
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        
+        .stat-change {
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        
+        .stat-change.positive {
+            color: var(--success-color);
+        }
+        
+        .stat-change.negative {
+            color: var(--error-color);
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-label {
+            display: block;
+            color: var(--text-secondary);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+            background: rgba(255, 255, 255, 0.08);
+        }
+        
+        .form-select {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            cursor: pointer;
+        }
+        
+        .form-textarea {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            resize: vertical;
+            min-height: 120px;
+            font-family: inherit;
+        }
+
+        /* Tables */
+        .table-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 15px;
+            overflow: hidden;
+        }
+        
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .table th {
+            background: rgba(99, 102, 241, 0.1);
+            padding: 1.5rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .table td {
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+        }
+        
+        .table tr:hover {
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        /* Progress Bars */
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .badge-success {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success-color);
+        }
+        
+        .badge-warning {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning-color);
+        }
+        
+        .badge-error {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--error-color);
+        }
+        
+        .badge-primary {
+            background: rgba(99, 102, 241, 0.2);
+            color: var(--primary-color);
+        }
+
+        /* Page Specific Styles */
+        .page {
+            display: none;
+        }
+        
+        .page.active {
+            display: block;
+        }
+
+        /* Chatbot Cards */
+        .chatbot-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .chatbot-card:hover {
+            border-color: var(--primary-color);
+            box-shadow: 0 15px 40px rgba(99, 102, 241, 0.2);
+            transform: translateY(-5px);
+        }
+        
+        .chatbot-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .chatbot-avatar {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+        
+        .chatbot-info h3 {
+            color: var(--text-primary);
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+        
+        .chatbot-info p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        
+        .chatbot-stats {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .chatbot-stat {
+            text-align: center;
+        }
+        
+        .chatbot-stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .chatbot-stat-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        
+        .chatbot-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        /* Flow Builder */
+        .flow-builder {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            height: 600px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .flow-toolbar {
+            background: rgba(99, 102, 241, 0.1);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        
+        .flow-canvas {
+            flex: 1;
+            position: relative;
+            background: 
+                radial-gradient(circle at 20px 20px, rgba(99, 102, 241, 0.1) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+        
+        .flow-node {
+            position: absolute;
+            background: var(--bg-card);
+            border: 2px solid var(--border-color);
+            border-radius: 15px;
+            padding: 1.5rem;
+            min-width: 200px;
+            cursor: move;
+            transition: all 0.3s ease;
+        }
+        
+        .flow-node:hover {
+            border-color: var(--primary-color);
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.3);
+        }
+        
+        .flow-node.start {
+            top: 50px;
+            left: 50px;
+            border-color: var(--success-color);
+        }
+        
+        .flow-node.message {
+            top: 200px;
+            left: 300px;
+            border-color: var(--primary-color);
+        }
+        
+        .flow-node.condition {
+            top: 350px;
+            left: 150px;
+            border-color: var(--warning-color);
+        }
+
+        /* File Upload */
+        .upload-area {
+            border: 2px dashed var(--border-color);
+            border-radius: 15px;
+            padding: 3rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .upload-area:hover {
+            border-color: var(--primary-color);
+            background: rgba(99, 102, 241, 0.05);
+        }
+        
+        .upload-area.dragover {
+            border-color: var(--primary-color);
+            background: rgba(99, 102, 241, 0.1);
+        }
+        
+        .upload-icon {
+            font-size: 3rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        /* Charts */
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 2rem 0;
+        }
+
+        /* Demo Navigation */
+        .demo-nav {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            z-index: 1000;
+            max-width: 300px;
+        }
+        
+        .demo-btn {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.8rem;
+        }
+        
+        .demo-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
+        }
+        
+        .demo-btn.active {
+            background: var(--success-color);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.mobile-open {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .content-header {
+                padding: 1rem;
+            }
+            
+            .content-body {
+                padding: 1rem;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .demo-nav {
+                bottom: 1rem;
+                right: 1rem;
+                max-width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container"></div>
+
+    <!-- Color Customization Panel -->
+    <div class="color-panel" id="colorPanel">
+        <button class="color-panel-toggle" onclick="toggleColorPanel()">🎨</button>
+        <h3>🎨 Choose Theme</h3>
+        
+        <div class="color-scheme active" onclick="changeColorScheme('default')">
+            <div class="color-preview">
+                <div class="color-dot" style="background: #6366f1;"></div>
+                <div class="color-dot" style="background: #8b5cf6;"></div>
+                <div class="color-dot" style="background: #06b6d4;"></div>
+            </div>
+            <span class="scheme-name">Purple Flow</span>
+        </div>
+        
+        <div class="color-scheme" onclick="changeColorScheme('ocean')">
+            <div class="color-preview">
+                <div class="color-dot" style="background: #0ea5e9;"></div>
+                <div class="color-dot" style="background: #06b6d4;"></div>
+                <div class="color-dot" style="background: #0891b2;"></div>
+            </div>
+            <span class="scheme-name">Ocean Blue</span>
+        </div>
+        
+        <div class="color-scheme" onclick="changeColorScheme('emerald')">
+            <div class="color-preview">
+                <div class="color-dot" style="background: #10b981;"></div>
+                <div class="color-dot" style="background: #059669;"></div>
+                <div class="color-dot" style="background: #047857;"></div>
+            </div>
+            <span class="scheme-name">Emerald Green</span>
+        </div>
+        
+        <div class="color-scheme" onclick="changeColorScheme('sunset')">
+            <div class="color-preview">
+                <div class="color-dot" style="background: #f59e0b;"></div>
+                <div class="color-dot" style="background: #ef4444;"></div>
+                <div class="color-dot" style="background: #dc2626;"></div>
+            </div>
+            <span class="scheme-name">Sunset Orange</span>
+        </div>
+        
+        <div class="color-scheme" onclick="changeColorScheme('rose')">
+            <div class="color-preview">
+                <div class="color-dot" style="background: #ec4899;"></div>
+                <div class="color-dot" style="background: #be185d;"></div>
+                <div class="color-dot" style="background: #9d174d;"></div>
+            </div>
+            <span class="scheme-name">Rose Pink</span>
+        </div>
+        
+        <div class="color-scheme" onclick="changeColorScheme('cyber')">
+            <div class="color-preview">
+                <div class="color-dot" style="background: #00ff88;"></div>
+                <div class="color-dot" style="background: #00d4ff;"></div>
+                <div class="color-dot" style="background: #ff0080;"></div>
+            </div>
+            <span class="scheme-name">Cyber Neon</span>
+        </div>
+        
+        <button class="reset-btn" onclick="changeColorScheme('default')">Reset to Default</button>
+    </div>
+
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">ChatFlow AI</div>
+                <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-title">Dashboard</div>
+                    <a class="nav-item active" onclick="showPage('overview')">
+                        <span class="nav-icon">📊</span>
+                        <span class="nav-text">Overview</span>
+                    </a>
+                    <a class="nav-item" onclick="showPage('chatbots')">
+                        <span class="nav-icon">🤖</span>
+                        <span class="nav-text">My Chatbots</span>
+                    </a>
+                    <a class="nav-item" onclick="showPage('analytics')">
+                        <span class="nav-icon">📈</span>
+                        <span class="nav-text">Analytics</span>
+                    </a>
+                    <a class="nav-item" onclick="showPage('usage')">
+                        <span class="nav-icon">📋</span>
+                        <span class="nav-text">Usage & Limits</span>
+                    </a>
+                </div>
+                
+                <div class="nav-section">
+                    <div class="nav-section-title">Build</div>
+                    <a class="nav-item" onclick="showPage('create')">
+                        <span class="nav-icon">➕</span>
+                        <span class="nav-text">Create Chatbot</span>
+                    </a>
+                    <a class="nav-item" onclick="showPage('builder')">
+                        <span class="nav-icon">🔧</span>
+                        <span class="nav-text">Flow Builder</span>
+                    </a>
+                    <a class="nav-item" onclick="showPage('training')">
+                        <span class="nav-icon">📚</span>
+                        <span class="nav-text">Training Data</span>
+                    </a>
+                    <a class="nav-item" onclick="showPage('knowledge')">
+                        <span class="nav-icon">💡</span>
+                        <span class="nav-text">Knowledge Base</span>
+                    </a>
+                </div>
+                
+                <div class="nav-section">
+                    <div class="nav-section-title">Manage</div>
+                    <a class="nav-item" onclick="showPage('conversations')">
+                        <span class="nav-icon">💬</span>
+                        <span class="nav-text">Conversations</span>
+                    </a>
+                    <a class="nav-item" onclick="showPage('integrations')">
+                        <span class="nav-icon">🔗</span>
+                        <span class="nav-text">Integrations</span>
+                    </a>
+                </div>
+                
+                <div class="nav-section">
+                    <div class="nav-section-title">Account</div>
+                    <a class="nav-item" onclick="showPage('billing')">
+                        <span class="nav-icon">💳</span>
+                        <span class="nav-text">Billing</span>
+                    </a>
+                    <a class="nav-item" onclick="showPage('team')">
+                        <span class="nav-icon">👥</span>
+                        <span class="nav-text">Team</span>
+                    </a>
+                    <a class="nav-item" onclick="showPage('settings')">
+                        <span class="nav-icon">⚙️</span>
+                        <span class="nav-text">Settings</span>
+                    </a>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- 1. Dashboard Overview -->
+            <div class="page active" id="overview">
+                <div class="content-header">
+                    <div class="header-top">
+                        <h1 class="page-title">Dashboard Overview</h1>
+                        <div class="header-actions">
+                            <button class="btn btn-primary">
+                                <span>➕</span>
+                                Create Chatbot
+                            </button>
+                        </div>
+                    </div>
+                    <div class="breadcrumb">
+                        <a href="#">Dashboard</a> / Overview
+                    </div>
+                </div>
+                
+                <div class="content-body">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">🤖</div>
+                            <div class="stat-value">12</div>
+                            <div class="stat-label">Active Chatbots</div>
+                            <div class="stat-change positive">+2 this month</div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon">💬</div>
+                            <div class="stat-value">8.4K</div>
+                            <div class="stat-label">Conversations</div>
+                            <div class="stat-change positive">+15% vs last month</div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon">👥</div>
+                            <div class="stat-value">2.1K</div>
+                            <div class="stat-label">Unique Users</div>
+                            <div class="stat-change positive">+8% vs last month</div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon">⚡</div>
+                            <div class="stat-value">94%</div>
+                            <div class="stat-label">Resolution Rate</div>
+                            <div class="stat-change positive">+3% vs last month</div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-2">
+                        <div class="card">
+                            <h3 style="margin-bottom: 2rem; color: var(--text-primary);">Recent Activity</h3>
+                            <div>
+                                <div style="display: flex; align-items: center; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                    <div style="width: 40px; height: 40px; background: var(--success-color); border-radius: 50%; display: flex; align-items: center; justify-content: center;">✓</div>
+                                    <div>
+                                        <div style="color: var(--text-primary); font-weight: 600;">Customer Support Bot deployed</div>
+                                        <div style="color: var(--text-muted); font-size: 0.9rem;">2 hours ago</div>
+                                    </div>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                    <div style="width: 40px; height: 40px; background: var(--primary-color); border-radius: 50%; display: flex; align-items: center; justify-content: center;">📊</div>
+                                    <div>
+                                        <div style="color: var(--text-primary); font-weight: 600;">Weekly analytics report generated</div>
+                                        <div style="color: var(--text-muted); font-size: 0.9rem;">5 hours ago</div>
+                                    </div>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 1rem; padding: 1rem 0;">
+                                    <div style="width: 40px; height: 40px; background: var(--warning-color); border-radius: 50%; display: flex; align-items: center; justify-content: center;">📚</div>
+                                    <div>
+                                        <div style="color: var(--text-primary); font-weight: 600;">Training data updated</div>
+                                        <div style="color: var(--text-muted); font-size: 0.9rem;">1 day ago</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <h3 style="margin-bottom: 2rem; color: var(--text-primary);">Performance Overview</h3>
+                            <div class="chart-container">
+                                <canvas id="performanceChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card" style="margin-top: 2rem;">
+                        <h3 style="margin-bottom: 2rem; color: var(--text-primary);">Top Performing Chatbots</h3>
+                        <div class="table-container">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Chatbot</th>
+                                        <th>Conversations</th>
+                                        <th>Success Rate</th>
+                                        <th>Avg Response Time</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>
+                                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                                <div style="width: 40px; height: 40px; background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); border-radius: 10px; display: flex; align-items: center; justify-content: center;">🛒</div>
+                                                <div>
+                                                    <div style="color: var(--text-primary); font-weight: 600;">E-commerce Assistant</div>
+                                                    <div style="color: var(--text-muted); font-size: 0.9rem;">Shopping support</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>3,247</td>
+                                        <td>96%</td>
+                                        <td>1.2s</td>
+                                        <td><span class="badge badge-success">Active</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                                <div style="width: 40px; height: 40px; background: linear-gradient(135deg, var(--success-color), var(--accent-color)); border-radius: 10px; display: flex; align-items: center; justify-content: center;">🏥</div>
+                                                <div>
+                                                    <div style="color: var(--text-primary); font-weight: 600;">Healthcare Bot</div>
+                                                    <div style="color: var(--text-muted); font-size: 0.9rem;">Patient support</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>2,156</td>
+                                        <td>94%</td>
+                                        <td>0.8s</td>
+                                        <td><span class="badge badge-success">Active</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                                <div style="width: 40px; height: 40px; background: linear-gradient(135deg, var(--warning-color), var(--error-color)); border-radius: 10px; display: flex; align-items: center; justify-content: center;">💼</div>
+                                                <div>
+                                                    <div style="color: var(--text-primary); font-weight: 600;">HR Assistant</div>
+                                                    <div style="color: var(--text-muted); font-size: 0.9rem;">Employee queries</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>1,892</td>
+                                        <td>91%</td>
+                                        <td>1.5s</td>
+                                        <td><span class="badge badge-warning">Training</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. My Chatbots -->
+            <div class="page" id="chatbots">
+                <div class="content-header">
+                    <div class="header-top">
+                        <h1 class="page-title">My Chatbots</h1>
+                        <div class="header-actions">
+                            <button class="btn btn-secondary">
+                                <span>📊</span>
+                                Export Data
+                            </button>
+                            <button class="btn btn-primary">
+                                <span>➕</span>
+                                Create New
+                            </button>
+                        </div>
+                    </div>
+                    <div class="breadcrumb">
+                        <a href="#">Dashboard</a> / My Chatbots
+                    </div>
+                </div>
+                
+                <div class="content-body">
+                    <div class="grid grid-3">
+                        <div class="chatbot-card">
+                            <div class="chatbot-header">
+                                <div class="chatbot-avatar">🛒</div>
+                                <div class="chatbot-info">
+                                    <h3>E-commerce Assistant</h3>
+                                    <p>Shopping support & product recommendations</p>
+                                </div>
+                            </div>
+                            <div class="chatbot-stats">
+                                <div class="chatbot-stat">
+                                    <div class="chatbot-stat-value">3.2K</div>
+                                    <div class="chatbot-stat-label">Conversations</div>
+                                </div>
+                                <div class="chatbot-stat">
+                                    <div class="chatbot-stat-value">96%</div>
+                                    <div class="chatbot-stat-label">Success Rate</div>
+                                </div>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 96%;"></div>
+                            </div>
+                            <div class="chatbot-actions">
+                                <button class="btn btn-primary">Edit</button>
+                                <button class="btn btn-secondary">Analytics</button>
+                            </div>
+                        </div>
+                        
+                        <div class="chatbot-card">
+                            <div class="chatbot-header">
+                                <div class="chatbot-avatar">🏥</div>
+                                <div class="chatbot-info">
+                                    <h3>Healthcare Bot</h3>
+                                    <p>Patient support & appointment booking</p>
+                                </div>
+                            </div>
+                            <div class="chatbot-stats">
+                                <div class="chatbot-stat">
+                                    <div class="chatbot-stat-value">2.1K</div>
+                                    <div class="chatbot-stat-label">Conversations</div>
+                                </div>
+                                <div class="chatbot-stat">
+                                    <div class="chatbot-stat-value">94%</div>
+                                    <div class="chatbot-stat-label">Success Rate</div>
+                                </div>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 94%;"></div>
+                            </div>
+                            <div class="chatbot-actions">
+                                <button class="btn btn-primary">Edit</button>
+                                <button class="btn btn-secondary">Analytics</button>
+                            </div>
+                        </div>
+                        
+                        <div class="chatbot-card">
+                            <div class="chatbot-header">
+                                <div class="chatbot-avatar">💼</div>
+                                <div class="chatbot-info">
+                                    <h3>HR Assistant</h3>
+                                    <p>Employee queries & policy information</p>
+                                </div>
+                            </div>
+                            <div class="chatbot-stats">
+                                <div class="chatbot-stat">
+                                    <div class="chatbot-stat-value">1.8K</div>
+                                    <div class="chatbot-stat-label">Conversations</div>
+                                </div>
+                                <div class="chatbot-stat">
+                                    <div class="chatbot-stat-value">91%</div>
+                                    <div class="chatbot-stat-label">Success Rate</div>
+                                </div>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 91%;"></div>
+                            </div>
+                            <div class="chatbot-actions">
+                                <button class="btn btn-primary">Edit</button>
+                                <button class="btn btn-secondary">Analytics</button>
+                            </div>
+                        </div>
+                        
+                        <div class="chatbot-card">
+                            <div class="chatbot-header">
+                                <div class="chatbot-avatar">🎓</div>
+                                <div class="chatbot-info">
+                                    <h3>Education Helper</h3>
+                                    <p>Student support & course information</p>
+                                </div>
+                            </div>
+                            <div class="chatbot-stats">
+                                <div class="chatbot-stat">
+                                    <div class="chatbot-stat-value">1.5K</div>
+                                    <div class="chatbot-stat-label">Conversations</div>
+                                </div>
+                                <div class="chatbot-stat">
+                                    <div class="chatbot-stat-value">89%</div>
+                                    <div class="chatbot-stat-label">Success Rate</div>
+                                </div>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 89%;"></div>
+                            </div>
+                            <div class="chatbot-actions">
+                                <button class="btn btn-primary">Edit</button>
+                                <button class="btn btn-secondary">Analytics</button>
+                            </div>
+                        </div>
+                        
+                        <div class="chatbot-card">
+                            <div class="chatbot-header">
+                                <div class="chatbot-avatar">🏦</div>
+                                <div class="chatbot-info">
+                                    <h3>Banking Assistant</h3>
+                                    <p>Account queries & transaction support</p>
+                                </div>
+                            </div>
+                            <div class="chatbot-stats">
+                                <div class="chatbot-stat">
+                                    <div class="chatbot-stat-value">987</div>
+                                    <div class="chatbot-stat-label">Conversations</div>
+                                </div>
+                                <div class="chatbot-stat">
+                                    <div class="chatbot-stat-value">97%</div>
+                                    <div class="chatbot-stat-label">Success Rate</div>
+                                </div>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 97%;"></div>
+                            </div>
+                            <div class="chatbot-actions">
+                                <button class="btn btn-primary">Edit</button>
+                                <button class="btn btn-secondary">Analytics</button>
+                            </div>
+                        </div>
+                        
+                        <div class="chatbot-card" style="border: 2px dashed var(--border-color); display: flex; align-items: center; justify-content: center; min-height: 300px;">
+                            <div style="text-align: center;">
+                                <div style="font-size: 3rem; margin-bottom: 1rem;">➕</div>
+                                <h3 style="color: var(--text-primary); margin-bottom: 1rem;">Create New Chatbot</h3>
+                                <p style="color: var(--text-muted); margin-bottom: 2rem;">Build a new AI assistant for your business</p>
+                                <button class="btn btn-primary">Get Started</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Create New Chatbot -->
+            <div class="page" id="create">
+                <div class="content-header">
+                    <div class="header-top">
+                        <h1 class="page-title">Create New Chatbot</h1>
+                        <div class="header-actions">
+                            <button class="btn btn-secondary">Save Draft</button>
+                            <button class="btn btn-primary">Create & Deploy</button>
+                        </div>
+                    </div>
+                    <div class="breadcrumb">
+                        <a href="#">Dashboard</a> / <a href="#">My Chatbots</a> / Create New
+                    </div>
+                </div>
+                
+                <div class="content-body">
+                    <div class="grid grid-2">
+                        <div class="card">
+                            <h3 style="margin-bottom: 2rem; color: var(--text-primary);">Basic Information</h3>
+                            <form>
+                                <div class="form-group">
+                                    <label class="form-label">Chatbot Name</label>
+                                    <input type="text" class="form-input" placeholder="Enter chatbot name" value="Customer Support Bot">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Description</label>
+                                    <textarea class="form-textarea" placeholder="Describe what your chatbot does">Provides 24/7 customer support and handles common inquiries about products, orders, and policies.</textarea>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Industry</label>
+                                    <select class="form-select">
+                                        <option>E-commerce</option>
+                                        <option>Healthcare</option>
+                                        <option>Education</option>
+                                        <option>Banking</option>
+                                        <option>Real Estate</option>
+                                        <option>Other</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Primary Language</label>
+                                    <select class="form-select">
+                                        <option>English</option>
+                                        <option>Spanish</option>
+                                        <option>French</option>
+                                        <option>German</option>
+                                        <option>Chinese</option>
+                                        <option>Japanese</option>
+                                    </select>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <div class="card">
+                            <h3 style="margin-bottom: 2rem; color: var(--text-primary);">Chatbot Personality</h3>
+                            <form>
+                                <div class="form-group">
+                                    <label class="form-label">Tone of Voice</label>
+                                    <select class="form-select">
+                                        <option>Professional</option>
+                                        <option>Friendly</option>
+                                        <option>Casual</option>
+                                        <option>Formal</option>
+                                        <option>Enthusiastic</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Avatar Style</label>
+                                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-top: 1rem;">
+                                        <div style="aspect-ratio: 1; background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 2rem; cursor: pointer; border: 3px solid var(--primary-color);">🤖</div>
+                                        <div style="aspect-ratio: 1; background: linear-gradient(135deg, var(--success-color), var(--accent-color)); border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 2rem; cursor: pointer; border: 3px solid transparent;">👨‍💼</div>
+                                        <div style="aspect-ratio: 1; background: linear-gradient(135deg, var(--warning-color), var(--error-color)); border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 2rem; cursor: pointer; border: 3px solid transparent;">👩‍💻</div>
+                                        <div style="aspect-ratio: 1; background: linear-gradient(135deg, var(--secondary-color), var(--primary-color)); border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 2rem; cursor: pointer; border: 3px solid transparent;">🎯</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Welcome Message</label>
+                                    <textarea class="form-textarea" placeholder="Enter the first message users will see">Hi! I'm your customer support assistant. How can I help you today?</textarea>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <div class="card" style="margin-top: 2rem;">
+                        <h3 style="margin-bottom: 2rem; color: var(--text-primary);">Quick Setup Templates</h3>
+                        <div class="grid grid-3">
+                            <div style="border: 2px solid var(--border-color); border-radius: 15px; padding: 2rem; text-align: center; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.borderColor='var(--primary-color)'" onmouseout="this.style.borderColor='var(--border-color)'">
+                                <div style="font-size: 2.5rem; margin-bottom: 1rem;">🛒</div>
+                                <h4 style="color: var(--text-primary); margin-bottom: 1rem;">E-commerce</h4>
+                                <p style="color: var(--text-muted);">Product support, order tracking, returns</p>
+                            </div>
+                            <div style="border: 2px solid var(--border-color); border-radius: 15px; padding: 2rem; text-align: center; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.borderColor='var(--primary-color)'" onmouseout="this.style.borderColor='var(--border-color)'">
+                                <div style="font-size: 2.5rem; margin-bottom: 1rem;">🏥</div>
+                                <h4 style="color: var(--text-primary); margin-bottom: 1rem;">Healthcare</h4>
+                                <p style="color: var(--text-muted);">Appointments, symptoms, patient care</p>
+                            </div>
+                            <div style="border: 2px solid var(--border-color); border-radius: 15px; padding: 2rem; text-align: center; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.borderColor='var(--primary-color)'" onmouseout="this.style.borderColor='var(--border-color)'">
+                                <div style="font-size: 2.5rem; margin-bottom: 1rem;">💼</div>
+                                <h4 style="color: var(--text-primary); margin-bottom: 1rem;">Business</h4>
+                                <p style="color: var(--text-muted);">Lead generation, support, sales</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. Chatbot Builder -->
+            <div class="page" id="builder">
+                <div class="content-header">
+                    <div class="header-top">
+                        <h1 class="page-title">Flow Builder</h1>
+                        <div class="header-actions">
+                            <button class="btn btn-secondary">Preview</button>
+                            <button class="btn btn-primary">Save Changes</button>
+                        </div>
+                    </div>
+                    <div class="breadcrumb">
+                        <a href="#">Dashboard</a> / <a href="#">My Chatbots</a> / Flow Builder
+                    </div>
+                </div>
+                
+                <div class="content-body">
+                    <div class="flow-builder">
+                        <div class="flow-toolbar">
+                            <button class="btn btn-secondary">
+                                <span>📝</span>
+                                Message
+                            </button>
+                            <button class="btn btn-secondary">
+                                <span>❓</span>
+                                Question
+                            </button>
+                            <button class="btn btn-secondary">
+                                <span>🔀</span>
+                                Condition
+                            </button>
+                            <button class="btn btn-secondary">
+                                <span>🔗</span>
+                                Action
+                            </button>
+                            <div style="margin-left: auto; display: flex; gap: 1rem;">
+                                <button class="btn btn-secondary">Undo</button>
+                                <button class="btn btn-secondary">Redo</button>
+                            </div>
+                        </div>
+                        
+                        <div class="flow-canvas">
+                            <div class="flow-node start">
+                                <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                                    <div style="width: 30px; height: 30px; background: var(--success-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">▶</div>
+                                    <strong style="color: var(--text-primary);">Start</strong>
+                                </div>
+                                <p style="color: var(--text-secondary); font-size: 0.9rem;">Conversation begins here</p>
+                            </div>
+                            
+                            <div class="flow-node message">
+                                <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                                    <div style="width: 30px; height: 30px; background: var(--primary-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white;">💬</div>
+                                    <strong style="color: var(--text-primary);">Welcome Message</strong>
+                                </div>
+                                <p style="color: var(--text-secondary); font-size: 0.9rem;">Hi! How can I help you today?</p>
+                                <div style="margin-top: 1rem;">
+                                    <button class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.8rem;">Edit</button>
+                                </div>
+                            </div>
+                            
+                            <div class="flow-node condition">
+                                <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                                    <div style="width: 30px; height: 30px; background: var(--warning-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white;">❓</div>
+                                    <strong style="color: var(--text-primary);">User Intent</strong>
+                                </div>
+                                <p style="color: var(--text-secondary); font-size: 0.9rem;">Detect user's question type</p>
+                                <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+                                    <span class="badge badge-primary">Support</span>
+                                    <span class="badge badge-success">Sales</span>
+                                    <span class="badge badge-warning">Other</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 2rem;">
+                        <div class="card">
+                            <h3 style="margin-bottom: 1.5rem; color: var(--text-primary);">Node Properties</h3>
+                            <div class="grid grid-2">
+                                <div>
+                                    <div class="form-group">
+                                        <label class="form-label">Node Type</label>
+                                        <select class="form-select">
+                                            <option>Message</option>
+                                            <option>Question</option>
+                                            <option>Condition</option>
+                                            <option>Action</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Node Name</label>
+                                        <input type="text" class="form-input" value="Welcome Message">
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="form-group">
+                                        <label class="form-label">Message Content</label>
+                                        <textarea class="form-textarea">Hi! How can I help you today?</textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. Training Data Manager -->
+            <div class="page" id="training">
+                <div class="content-header">
+                    <div class="header-top">
+                        <h1 class="page-title">Training Data Manager</h1>
+                        <div class="header-actions">
+                            <button class="btn btn-secondary">
+                                <span>📊</span>
+                                View Analytics
+                            </button>
+                            <button class="btn btn-primary">
+                                <span>🔄</span>
+                                Retrain Model
+                            </button>
+                        </div>
+                    </div>
+                    <div class="breadcrumb">
+                        <a href="#">Dashboard</a> / Training Data
+                    </div>
+                </div>
+                
+                <div class="content-body">
+                    <div class="grid grid-2">
+                        <div class="card">
+                            <h3 style="margin-bottom: 2rem; color: var(--text-primary);">Upload Training Data</h3>
+                            <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                                <div class="upload-icon">📁</div>
+                                <h4 style="color: var(--text-primary); margin-bottom: 1rem;">Drop files here or click to upload</h4>
+                                <p style="color: var(--text-muted); margin-bottom: 1rem;">Supported formats: PDF, DOC, DOCX, TXT, CSV</p>
+                                <button class="btn btn-primary">Choose Files</button>
+                                <input type="file" id="fileInput" multiple style="display: none;">
+                            </div>
+                            
+                            <div style="margin-top: 2rem;">
+                                <h4 style="color: var(--text-primary); margin-bottom: 1rem;">Or add website URLs</h4>
+                                <div style="display: flex; gap: 1rem;">
+                                    <input type="url" class="form-input" placeholder="https://example.com" style="flex: 1;">
+                                    <button class="btn btn-primary">Add URL</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <h3 style="margin-bottom: 2rem; color: var(--text-primary);">Training Progress</h3>
+                            <div style="margin-bottom: 2rem;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                    <span style="color: var(--text-secondary);">Overall Progress</span>
+                                    <span style="color: var(--primary-color); font-weight: 600;">78%</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 78%;"></div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <div>
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                        <span style="color: var(--text-secondary);">Document Processing</span>
+                                        <span style="color: var(--success-color);">✓ Complete</span>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: 100%;"></div>
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                        <span style="color: var(--text-secondary);">Content Extraction</span>
+                                        <span style="color: var(--success-color);">✓ Complete</span>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: 100%;"></div>
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                        <span style="color: var(--text-secondary);">AI Model Training</span>
+                                        <span style="color: var(--warning-color);">⏳ In Progress</span>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: 65%;"></div>
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                        <span style="color: var(--text-secondary);">Quality Validation</span>
+                                        <span style="color: var(--text-muted);">⏸️ Pending</span>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: 0%;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card" style="margin-top: 2rem;">
+                        <h3 style="margin-bottom: 2rem; color: var(--text-primary);">Uploaded Files</h3>
+                        <div class="table-container">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>File Name</th>
+                                        <th>Type</th>
+                                        <th>Size</th>
+                                        <th>Status</th>
+                                        <th>Uploaded</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>
+                                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                                <span style="font-size: 1.5rem;">📄</span>
+                                                <span style="color: var(--text-primary);">product-catalog.pdf</span>
+                                            </div>
+                                        </td>
+                                        <td>PDF</td>
+                                        <td>2.4 MB</td>
+                                        <td><span class="badge badge-success">Processed</span></td>
+                                        <td>2 hours ago</td>
+                                        <td>
+                                            <button class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.8rem;">View</button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                                <span style="font-size: 1.5rem;">📝</span>
+                                                <span style="color: var(--text-primary);">faq-document.docx</span>
+                                            </div>
+                                        </td>
+                                        <td>DOCX</td>
+                                        <td>856 KB</td>
+                                        <td><span class="badge badge-warning">Processing</span></td>
+                                        <td>1 hour ago</td>
+                                        <td>
+                                            <button class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.8rem;">View</button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                                <span style="font-size: 1.5rem;">🌐</span>
+                                                <span style="color: var(--text-primary);">https://company.com/help</span>
+                                            </div>
+                                        </td>
+                                        <td>URL</td>
+                                        <td>-</td>
+                                        <td><span class="badge badge-success">Scraped</span></td>
+                                        <td>3 hours ago</td>
+                                        <td>
+                                            <button class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.8rem;">View</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. Knowledge Base Editor -->
+            <div class="page" id="knowledge">
+                <div class="content-header">
+                    <div class="header-top">
+                        <h1 class="page-title">Knowledge Base Editor</h1>
+                        <div class="header-actions">
+                            <button class="btn btn-secondary">
+                                <span>📤</span>
+                                Export
+                            </button>
+                            <button class="btn btn-primary">
+                                <span>➕</span>
+                                Add Q&A
+                            </button>
+                        </div>
+                    </div>
+                    <div class="breadcrumb">
+                        <a href="#">Dashboard</a> / Knowledge Base
+                    </div>
+                </div>
+                
+                <div class="content-body">
+                    <div class="grid grid-2">
+                        <div class="card">
+                            <h3 style="margin-bottom: 2rem; color: var(--text-primary);">Add New Q&A Pair</h3>
+                            <form>
+                                <div class="form-group">
+                                    <label class="form-label">Category</label>
+                                    <select class="form-select">
+                                        <option>General Support</option>
+                                        <option>Product Information</option>
+                                        <option>Billing & Payments</option>
+                                        <option>Technical Issues</option>
+                                        <option>Account Management</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Question</label>
+                                    <input type="text" class="form-input" placeholder="What question might users ask?">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Answer</label>
+                                    <textarea class="form-textarea" placeholder="Provide a helpful answer..."></textarea>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Tags (optional)</label>
+                                    <input type="text" class="form-input" placeholder="support, help, faq">
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary">Add Q&A Pair</button>
+                            </form>
+                        </div>
+                        
+                        <div class="card">
+                            <h3 style="margin-bottom: 2rem; color: var(--text-primary);">Knowledge Base Stats</h3>
+                            <div class="stats-grid" style="grid-template-columns: 1fr 1fr;">
+                                <div style="text-align: center; padding: 1.5rem; background: rgba(99, 102, 241, 0.1); border-radius: 15px;">
+                                    <div style="font-size: 2rem; font-weight: 800; color: var(--primary-color); margin-bottom: 0.5rem;">247</div>
+                                    <div style="color: var(--text-secondary);">Total Q&A Pairs</div>
+                                </div>
+                                <div style="text-align: center; padding: 1.5rem; background: rgba(16, 185, 129, 0.1); border-radius: 15px;">
+                                    <div style="font-size: 2rem; font-weight: 800; color: var(--success-color); margin-bottom: 0.5rem;">94%</div>
+                                    <div style="color: var(--text-secondary);">Match Rate</div>
+                                </div>
+                            </div>
+                            
+                            <div style="margin-top: 2rem;">
+                                <h4 style="color: var(--text-primary); margin-bottom: 1rem;">Categories</h4>
+                                <div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: rgba(255, 255, 255, 0.05); border-radius: 10px; margin-bottom: 1rem;">
+                                        <span style="color: var(--text-secondary);">General Support</span>
+                                        <span class="badge badge-primary">89 items</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: rgba(255, 255, 255, 0.05); border-radius: 10px; margin-bottom: 1rem;">
+                                        <span style="color: var(--text-secondary);">Product Information</span>
+                                        <span class="badge badge-success">67 items</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: rgba(255, 255, 255, 0.05); border-radius: 10px; margin-bottom: 1rem;">
+                                        <span style="color: var(--text-secondary);">Billing & Payments</span>
+                                        <span class="badge badge-warning">45 items</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: rgba(255, 255, 255, 0.05); border-radius: 10px;">
+                                        <span style="color: var(--text-secondary);">Technical Issues</span>
+                                        <span class="badge badge-error">46 items</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card" style="margin-top: 2rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                            <h3 style="color: var(--text-primary);">Q&A Pairs</h3>
+                            <div style="display: flex; gap: 1rem;">
+                                <input type="text" class="form-input" placeholder="Search Q&A pairs..." style="width: 300px;">
+                                <select class="form-select" style="width: 200px;">
+                                    <option>All Categories</option>
+                                    <option>General Support</option>
+                                    <option>Product Information</option>
+                                    <option>Billing & Payments</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="table-container">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Question</th>
+                                        <th>Category</th>
+                                        <th>Usage Count</th>
+                                        <th>Last Updated</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style="max-width: 300px;">
+                                            <div style="color: var(--text-primary); font-weight: 600; margin-bottom: 0.25rem;">How do I reset my password?</div>
+                                            <div style="color: var(--text-muted); font-size: 0.9rem;">You can reset your password by clicking...</div>
+                                        </td>
+                                        <td><span class="badge badge-primary">General Support</span></td>
+                                        <td>1,247</td>
+                                        <td>2 days ago</td>
+                                        <td>
+                                            <button class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.8rem; margin-right: 0.5rem;">Edit</button>
+                                            <button class="btn btn-error" style="padding: 0.5rem 1rem; font-size: 0.8rem;">Delete</button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="max-width: 300px;">
+                                            <div style="color: var(--text-primary); font-weight: 600; margin-bottom: 0.25rem;">What are your business hours?</div>
+                                            <div style="color: var(--text-muted); font-size: 0.9rem;">We're open Monday through Friday...</div>
+                                        </td>
+                                        <td><span class="badge badge-success">General Support</span></td>
+                                        <td>892</td>
+                                        <td>1 week ago</td>
+                                        <td>
+                                            <button class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.8rem; margin-right: 0.5rem;">Edit</button>
+                                            <button class="btn btn-error" style="padding: 0.5rem 1rem; font-size: 0.8rem;">Delete</button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="max-width: 300px;">
+                                            <div style="color: var(--text-primary); font-weight: 600; margin-bottom: 0.25rem;">How do I cancel my subscription?</div>
+                                            <div style="color: var(--text-muted); font-size: 0.9rem;">To cancel your subscription, go to...</div>
+                                        </td>
+                                        <td><span class="badge badge-warning">Billing & Payments</span></td>
+                                        <td>567</td>
+                                        <td>3 days ago</td>
+                                        <td>
+                                            <button class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.8rem; margin-right: 0.5rem;">Edit</button>
+                                            <button class="btn btn-error" style="padding: 0.5rem 1rem; font-size: 0.8rem;">Delete</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 7. Conversation History -->
+            <div class="page" id="conversations">
+                <div class="content-header">
+                    <div class="header-top">
+                        <h1 class="page-title">Conversation History</h1>
+                        <div class="header-actions">
+                            <button class="btn btn-secondary">
+                                <span>📊</span>
+                                Export Data
+                            </button>
+                            <button class="btn btn-primary">
+                                <span>🔄</span>
+                                Refresh
+                            </button>
+                        </div>
+                    </div>
+                    <div class="breadcrumb">
+                        <a href="#">Dashboard</a> / Conversations
+                    </div>
+                </div>
+                
+                <div class="content-body">
+                    <div class="grid grid-3">
+                        <div class="stat-card">
+                            <div class="stat-icon">💬</div>
+                            <div class="stat-value">8,247</div>
+                            <div class="stat-label">Total Conversations</div>
+                            <div class="stat-change positive">+12% this week</div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon">✅</div>
+                            <div class="stat-value">94%</div>
+                            <div class="stat-label">Resolution Rate</div>
+                            <div class="stat-change positive">+2% this week</div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon">⏱️</div>
+                            <div class="stat-value">1.2s</div>
+                            <div class="stat-label">Avg Response Time</div>
+                            <div class="stat-change negative">+0.1s this week</div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                            <h3 style="color: var(--text-primary);">Recent Conversations</h3>
+                            <div style="display: flex; gap: 1rem;">
+                                <select class="form-select" style="width: 200px;">
+                                    <option>All Chatbots</option>
+                                    <option>E-commerce Assistant</option>
+                                    <option>Healthcare Bot</option>
+                                    <option>HR Assistant</option>
+                                </select>
+                                <select class="form-select" style="width: 150px;">
+                                    <option>All Status</option>
+                                    <option>Resolved</option>
+                                    <option>Pending</option>
+                                    <option>Escalated</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="table-container">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>User</th>
+                                        <th>Chatbot</th>
+                                        <th>Messages</th>
+                                        <th>Duration</th>
+                                        <th>Status</th>
+                                        <th>Started</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>
+                                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                                <div style="width: 35px; height: 35px; background: var(--primary-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">JD</div>
+                                                <div>
+                                                    <div style="color: var(--text-primary); font-weight: 600;">John Doe</div>
+                                                    <div style="color: var(--text-muted); font-size: 0.9rem;">john@example.com</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>E-commerce Assistant</td>
+                                        <td>12</td>
+                                        <td>4m 32s</td>
+                                        <td><span class="badge badge-success">Resolved</span></td>
+                                        <td>2 hours ago</td>
+                                        <td>
+                                            <button class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.8rem;">View</button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                                <div style="width: 35px; height: 35px; background: var(--success-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">SM</div>
+                                                <div>
+                                                    <div style="color: var(--text-primary); font-weight: 600;">Sarah Miller</div>
+                                                    <div style="color: var(--text-muted); font-size: 0.9rem;">sarah@company.com</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>Healthcare Bot</td>
+                                        <td>8</td>
+                                        <td>2m 15s</td>
+                                        <td><span class="badge badge-warning">Pending</span></td>
+                                        <td>1 hour ago</td>
+                                        <td>
+                                            <button class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.8rem;">View</button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                                <div style="width: 35px; height: 35px; background: var(--warning-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">MJ</div>
+                                                <div>
+                                                    <div style="color: var(--text-primary); font-weight: 600;">Mike Johnson</div>
+                                                    <div style="color: var(--text-muted); font-size: 0.9rem;">mike@business.com</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>HR Assistant</td>
+                                        <td>15</td>
+                                        <td>7m 45s</td>
+                                        <td><span class="badge badge-error">Escalated</span></td>
+                                        <td>3 hours ago</td>
+                                        <td>
+                                            <button class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.8rem;">View</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 8. Analytics & Reports -->
+            <div class="page" id="analytics">
+                <div class="content-header">
+                    <div class="header-top">
+                        <h1 class="page-title">Analytics & Reports</h1>
+                        <div class="header-actions">
+                            <button class="btn btn-secondary">
+                                <span>📅</span>
+                                Date Range
+                            </button>
+                            <button class="btn btn-primary">
+                                <span>📊</span>
+                                Generate Report
+                            </button>
+                        </div>
+                    </div>
+                    <div class="breadcrumb">
+                        <a href="#">Dashboard</a> / Analytics
+                    </div>
+                </div>
+                
+                <div class="content-body">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">👥</div>
+                            <div class="stat-value">2,847</div>
+                            <div class="stat-label">Unique Users</div>
+                            <div class="stat-change positive">+18% vs last month</div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon">💬</div>
+                            <div class="stat-value">12.4K</div>
+                            <div class="stat-label">Total Messages</div>
+                            <div class="stat-change positive">+25% vs last month</div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon">⚡</div>
+                            <div class="stat-value">94.2%</div>
+                            <div class="stat-label">Success Rate</div>
+                            <div class="stat-change positive">+2.1% vs last month</div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon">⏱️</div>
+                            <div class="stat-value">1.2s</div>
+                            <div class="stat-label">Avg Response Time</div>
+                            <div class="stat-change negative">+0.2s vs last month</div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-2">
+                        <div class="card">
+                            <h3 style="margin-bottom: 2rem; color: var(--text-primary);">Conversation Volume</h3>
+                            <div class="chart-container">
+                                <canvas id="conversationChart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <h3 style="margin-bottom: 2rem; color: var(--text-primary);">User Satisfaction</h3>
+                            <div class="chart-container">
+                                <canvas id="satisfactionChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-2" style="margin-top: 2rem;">
+                        <div class="card">
+                            <h3 style="margin-bottom: 2rem; color: var(--text-primary);">Top Intents</h3>
+                            <div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: rgba(255, 255, 255, 0.05); border-radius: 10px; margin-bottom: 1rem;">
+                                    <span style="color: var(--text-secondary);">Product Information</span>
+                                    <div style="display: flex; align-items: center; gap: 1rem;">
+                                        <div style="width: 100px; height: 6px; background: rgba(255, 255, 255, 0.1); border-radius: 3px; overflow: hidden;">
+                                            <div style="width: 85%; height: 100%; background: var(--primary-color);"></div>
+                                        </div>
+                                        <span style="color: var(--primary-color); font-weight: 600;">2,847</span>
+                                    </div>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: rgba(255, 255, 255, 0.05); border-radius: 10px; margin-bottom: 1rem;">
+                                    <span style="color: var(--text-secondary);">Order Status</span>
+                                    <div style="display: flex; align-items: center; gap: 1rem;">
+                                        <div style="width: 100px; height: 6px; background: rgba(255, 255, 255, 0.1); border-radius: 3px; overflow: hidden;">
+                                            <div style="width: 72%; height: 100%; background: var(--success-color);"></div>
+                                        </div>
+                                        <span style="color: var(--success-color); font-weight: 600;">2,156</span>
+                                    </div>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: rgba(255, 255, 255, 0.05); border-radius: 10px; margin-bottom: 1rem;">
+                                    <span style="color: var(--text-secondary);">Technical Support</span>
+                                    <div style="display: flex; align-items: center; gap: 1rem;">
+                                        <div style="width: 100px; height: 6px; background: rgba(255, 255, 255, 0.1); border-radius: 3px; overflow: hidden;">
+                                            <div style="width: 58%; height: 100%; background: var(--warning-color);"></div>
+                                        </div>
+                                        <span style="color: var(--warning-color); font-weight: 600;">1,743</span>
+                                    </div>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: rgba(255, 255, 255, 0.05); border-radius: 10px;">
+                                    <span style="color: var(--text-secondary);">Billing Questions</span>
+                                    <div style="display: flex; align-items: center; gap: 1rem;">
+                                        <div style="width: 100px; height: 6px; background: rgba(255, 255, 255, 0.1); border-radius: 3px; overflow: hidden;">
+                                            <div style="width: 45%; height: 100%; background: var(--error-color);"></div>
+                                        </div>
+                                        <span style="color: var(--error-color); font-weight: 600;">1,352</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <h3 style="margin-bottom: 2rem; color: var(--text-primary);">Performance by Chatbot</h3>
+                            <div class="table-container">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Chatbot</th>
+                                            <th>Conversations</th>
+                                            <th>Success Rate</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>E-commerce Assistant</td>
+                                            <td>3,247</td>
+                                            <td><span style="color: var(--success-color);">96%</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Healthcare Bot</td>
+                                            <td>2,156</td>
+                                            <td><span style="color: var(--success-color);">94%</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td>HR Assistant</td>
+                                            <td>1,892</td>
+                                            <td><span style="color: var(--warning-color);">91%</span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 9. Integration Setup -->
+            <div class="page" id="integrations">
+                <div class="content-header">
+                    <div class="header-top">
+                        <h1 class="page-title">Integration Setup</h1>
+                        <div class="header-actions">
+                            <button class="btn btn-secondary">
+                                <span>📖</span>
+                                Documentation
+                            </button>
+                            <button class="btn btn-primary">
+                                <span>🔑</span>
+                                Generate API Key
+                            </button>
+                        </div>
+                    </div>
+                    <div class="breadcrumb">
+                        <a href="#">Dashboard</a> / Integrations
+                    </div>
+                </div>
+                
+                <div class="content-body">
+                    <div class="grid grid-2">
+                        <div class="card">
+                            <h3 style="margin-bottom: 2rem; color: var(--text-primary);">Website Embed Code</h3>
+                            <p style="color: var(--text-secondary); margin-bottom: 2rem;">Copy and paste this code into your website's HTML to add the chatbot widget.</p>
+                            
+                            <div style="background: rgba(0, 0, 0, 0.3); border-radius: 10px; padding: 1.5rem; margin-bottom: 2rem; position: relative;">
+                                <code style="color: var(--accent-color); font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; line-height: 1.6;">
+&lt;script&gt;<br>
+&nbsp;&nbsp;(function() {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;var chatbot = document.createElement('script');<br>
+&nbsp;&nbsp;&nbsp;&nbsp;chatbot.src = 'https://cdn.chatflow.ai/widget.js';<br>
+&nbsp;&nbsp;&nbsp;&nbsp;chatbot.setAttribute('data-chatbot-id', 'cb_abc123');<br>
+&nbsp;&nbsp;&nbsp;&nbsp;document.head.appendChild(chatbot);<br>
+&nbsp;&nbsp;})();<br>
+&lt;/script&gt;
+                                </code>
+                                <button class="btn btn-secondary" style="position: absolute; top: 1rem; right: 1rem; padding: 0.5rem 1rem; font-size: 0.8rem;" onclick="copyToClipboard()">Copy</button>
+                            </div>
+                            
+                            <div style="display: flex; gap: 1rem;">
+                                <button class="btn btn-primary">Test Integration</button>
+                                <button class="btn btn-secondary">Customize Widget</button>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <h3 style="margin-bottom: 2rem; color: var(--text-primary);">API Configuration</h3>
+                            <div class="form-group">
+                                <label class="form-label">API Endpoint</label>
+                                <input type="text" class="form-input" value="https://api.chatflow.ai/v1/chat" readonly>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">API Key</label>
+                                <div style="display: flex; gap: 1rem;">
+                                    <input type="password" class="form-input" value="sk_live_abc123def456ghi789" readonly style="flex: 1;">
+                                    <button class="btn btn-secondary">Show</button>
+                                    <button class="btn btn-secondary">Regenerate</button>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Webhook URL (Optional)</label>
+                                <input type="url" class="form-input" placeholder="https://your-site.com/webhook">
+                            </div>
+                            
+                            <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 10px; padding: 1rem; margin-top: 2rem;">
+                                <div style="display: flex; align-items: center; gap: 0.5rem; color: var(--success-color); font-weight: 600; margin-bottom: 0.5rem;">
+                                    <span>✅</span>
+                                    API Status: Active
+                                </div>
+                                <p style="color: var(--text-secondary); font-size: 0.9rem;">Last request: 2 minutes ago</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card" style="margin-top: 2rem;">
+                        <h3 style="margin-bottom: 2rem; color: var(--text-primary);">Available Integrations</h3>
+                        <div class="grid grid-3">
+                            <div style="border: 2px solid var(--border-color); border-radius: 15px; padding: 2rem; text-align: center; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.borderColor='var(--primary-color)'" onmouseout="this.style.borderColor='var(--border-color)'">
+                                <div style="font-size: 2.5rem; margin-bottom: 1rem;">💬</div>
+                                <h4 style="color: var(--text-primary); margin-bottom: 1rem;">Slack</h4>
+                                <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Connect your chatbot to Slack channels</p>
+                                <button class="btn btn-primary">Connect</button>
+                            </div>
+                            
+                            <div style="border: 2px solid var(--border-color); border-radius: 15px; padding: 2rem; text-align: center; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.borderColor='var(--primary-color)'" onmouseout="this.style.borderColor='var(--border-color)'">
+                                <div style="font-size: 2.5rem; margin-bottom: 1rem;">📱</div>
+                                <h4 style="color: var(--text-primary); margin-bottom: 1rem;">WhatsApp</h4>
+                                <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Deploy chatbot on WhatsApp Business</p>
+                                <button class="btn btn-primary">Connect</button>
+                            </div>
+                            
+                            <div style="border: 2px solid var(--border-color); border-radius: 15px; padding: 2rem; text-align: center; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.borderColor='var(--primary-color)'" onmouseout="this.style.borderColor='var(--border-color)'">
+                                <div style="font-size: 2.5rem; margin-bottom: 1rem;">📧</div>
+                                <h4 style="color: var(--text-primary); margin-bottom: 1rem;">Email</h4>
+                                <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Handle support emails automatically</p>
+                                <button class="btn btn-primary">Connect</button>
+                            </div>
+                            
+                            <div style="border: 2px solid var(--border-color); border-radius: 15px; padding: 2rem; text-align: center; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.borderColor='var(--primary-color)'" onmouseout="this.style.borderColor='var(--border-color)'">
+                                <div style="font-size: 2.5rem; margin-bottom: 1rem;">🛒</div>
+                                <h4 style="color: var(--text-primary); margin-bottom: 1rem;">Shopify</h4>
+                                <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Integrate with your Shopify store</p>
+                                <button class="btn btn-primary">Connect</button>
+                            </div>
+                            
+                            <div style="border: 2px solid var(--border-color); border-radius: 15px; padding: 2rem; text-align: center; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.borderColor='var(--primary-color)'" onmouseout="this.style.borderColor='var(--border-color)'">
+                                <div style="font-size: 2.5rem; margin-bottom: 1rem;">📊</div>
+                                <h4 style="color: var(--text-primary); margin-bottom: 1rem;">Salesforce</h4>
+                                <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Sync leads and customer data</p>
+                                <button class="btn btn-primary">Connect</button>
+                            </div>
+                            
+                            <div style="border: 2px solid var(--border-color); border-radius: 15px; padding: 2rem; text-align: center; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.borderColor='var(--primary-color)'" onmouseout="this.style.borderColor='var(--border-color)'">
+                                <div style="font-size: 2.5rem; margin-bottom: 1rem;">🔗</div>
+                                <h4 style="color: var(--text-primary); margin-bottom: 1rem;">Zapier</h4>
+                                <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Connect to 3000+ apps via Zapier</p>
+                                <button class="btn btn-primary">Connect</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 10. Chatbot Settings -->
+            <div class="page" id="settings">
+                <div class="content-header">
+                    <div class="header-top">
+                        <h1 class="page-title">Chatbot Settings</h1>
+                        <div class="header-actions">
+                            <button class="btn btn-secondary">Reset to Default</button>
+                            <button class="btn btn-primary">Save Changes</button>
+                        </div>
+                    </div>
+                    <div class="breadcrumb">
+                        <a href="#">Dashboard</a> / Settings
+                    </div>
+                </div>
+                
+                <div class="content-body">
+                    <div class="grid grid-2">
+                        <div class="card">
+                            <h3 style="margin-bottom: 2rem; color: var(--text-primary);">Appearance Settings</h3>
+                            <form>
+                                <div class="form-group">
+                                    <label class="form-label">Widget Position</label>
+                                    <select class="form-select">
+                                        <option>Bottom Right</option>
+                                        <option>Bottom Left</option>
+                                        <option>Top Right</option>
+                                        <option>Top Left</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Primary Color</label>
+                                    <div style="display: flex; gap: 1rem; align-items: center;">
+                                        <input type="color" value="#6366f1" style="width: 60px; height: 40px; border: none; border-radius: 8px; cursor: pointer;">
+                                        <input type="text" class="form-input" value="#6366f1" style="flex: 1;">
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Widget Size</label>
+                                    <select class="form-select">
+                                        <option>Small</option>
+                                        <option>Medium</option>
+                                        <option>Large</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Border Radius</label>
+                                    <input type="range" min="0" max="25" value="15" style="width: 100%; accent-color: var(--primary-color);">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Custom CSS (Advanced)</label>
+                                    <textarea class="form-textarea" placeholder="Enter custom CSS rules..."></textarea>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <div class="card">
+                            <h3 style="margin-bottom: 2rem; color: var(--text-primary);">Behavior Settings</h3>
+                            <form>
+                                <div class="form-group">
+                                    <label class="form-label">Auto-open Delay (seconds)</label>
+                                    <input type="number" class="form-input" value="5" min="0" max="60">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Greeting Message</label>
+                                    <textarea class="form-textarea">Hi! I'm here to help. What can I assist you with today?</textarea>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Offline Message</label>
+                                    <textarea class="form-textarea">We're currently offline. Please leave a message and we'll get back to you!</textarea>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <div style="display: flex; align-items: center; gap: 1rem;">
+                                        <input type="checkbox" id="enableSound" checked>
+                                        <label for="enableSound" style="color: var(--text-secondary);">Enable notification sounds</label>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <div style="display: flex; align-items: center; gap: 1rem;">
+                                        <input type="checkbox" id="showTyping" checked>
+                                        <label for="showTyping" style="color: var(--text-secondary);">Show typing indicator</label>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <div style="display: flex; align-items: center; gap: 1rem;">
+                                        <input type="checkbox" id="enableEmojis" checked>
+                                        <label for="enableEmojis" style="color: var(--text-secondary);">Enable emoji reactions</label>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 11. Usage & Limits -->
+            <div class="page" id="usage">
+                <div class="content-header">
+                    <div class="header-top">
+                        <h1 class="page-title">Usage & Limits</h1>
+                        <div class="header-actions">
+                            <button class="btn btn-secondary">Download Report</button>
+                            <button class="btn btn-primary">Upgrade Plan</button>
+                        </div>
+                    </div>
+                    <div class="breadcrumb">
+                        <a href="#">Dashboard</a> / Usage & Limits
+                    </div>
+                </div>
+                
+                <div class="content-body">
+                    <!-- Current Usage Overview -->
+                    <div class="card" style="margin-bottom: 2rem;">
+                        <h3 style="margin-bottom: 2rem; color: var(--text-primary);">Current Usage Overview</h3>
+                        <div class="grid grid-4">
+                            <div class="usage-metric">
+                                <div class="usage-value">2,847</div>
+                                <div class="usage-label">Messages Sent</div>
+                                <div class="usage-limit">of 5,000/month</div>
+                                <div class="usage-bar">
+                                    <div class="usage-progress" style="width: 57%;"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="usage-metric">
+                                <div class="usage-value">12</div>
+                                <div class="usage-label">Active Chatbots</div>
+                                <div class="usage-limit">of 15 max</div>
+                                <div class="usage-bar">
+                                    <div class="usage-progress" style="width: 80%;"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="usage-metric">
+                                <div class="usage-value">1.2GB</div>
+                                <div class="usage-label">Training Data</div>
+                                <div class="usage-limit">of 5GB max</div>
+                                <div class="usage-bar">
+                                    <div class="usage-progress" style="width: 24%;"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="usage-metric">
+                                <div class="usage-value">15,234</div>
+                                <div class="usage-label">API Calls</div>
+                                <div class="usage-limit">of 50,000/month</div>
+                                <div class="usage-bar">
+                                    <div class="usage-progress" style="width: 30%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Usage History -->
+                    <div class="grid grid-2">
+                        <div class="card">
+                            <h3 style="margin-bottom: 2rem; color: var(--text-primary);">Usage History</h3>
+                            <div class="chart-container">
+                                <canvas id="usageChart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <h3 style="margin-bottom: 2rem; color: var(--text-primary);">Plan Details</h3>
+                            <div class="plan-details">
+                                <div class="plan-current">
+                                    <div class="plan-name">Pro Plan</div>
+                                    <div class="plan-price">$49/month</div>
+                                </div>
+                                
+                                <div class="plan-features">
+                                    <div class="plan-feature">
+                                        <span class="feature-icon">✅</span>
+                                        <span>5,000 messages/month</span>
+                                    </div>
+                                    <div class="plan-feature">
+                                        <span class="feature-icon">✅</span>
+                                        <span>15 chatbots</span>
+                                    </div>
+                                    <div class="plan-feature">
+                                        <span class="feature-icon">✅</span>
+                                        <span>5GB training data</span>
+                                    </div>
+                                    <div class="plan-feature">
+                                        <span class="feature-icon">✅</span>
+                                        <span>50,000 API calls/month</span>
+                                    </div>
+                                    <div class="plan-feature">
+                                        <span class="feature-icon">✅</span>
+                                        <span>Advanced analytics</span>
+                                    </div>
+                                    <div class="plan-feature">
+                                        <span class="feature-icon">✅</span>
+                                        <span>Priority support</span>
+                                    </div>
+                                </div>
+                                
+                                <button class="btn btn-primary" style="width: 100%; margin-top: 1.5rem;">Upgrade Plan</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Usage Alerts -->
+                    <div class="card" style="margin-top: 2rem;">
+                        <h3 style="margin-bottom: 2rem; color: var(--text-primary);">Usage Alerts</h3>
+                        <div class="alert-list">
+                            <div class="alert-item warning">
+                                <div class="alert-icon">⚠️</div>
+                                <div class="alert-content">
+                                    <div class="alert-title">High Message Usage</div>
+                                    <div class="alert-message">You've used 57% of your monthly message quota. Consider upgrading to avoid service interruption.</div>
+                                </div>
+                                <div class="alert-actions">
+                                    <button class="btn btn-secondary" onclick="dismissAlert(this)">Dismiss</button>
+                                    <button class="btn btn-primary" onclick="upgradeFromAlert()">Upgrade</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 12. Billing & Subscription -->
+            <div class="page" id="billing">
+                <div class="content-header">
+                    <div class="header-top">
+                        <h1 class="page-title">Billing & Subscription</h1>
+                        <div class="header-actions">
+                            <button class="btn btn-secondary">Download Invoice</button>
+                            <button class="btn btn-primary">Upgrade Plan</button>
+                        </div>
+                    </div>
+                    <div class="breadcrumb">
+                        <a href="#">Dashboard</a> / Billing
+                    </div>
+                </div>
+                
+                <div class="content-body">
+                    <!-- Current Plan -->
+                    <div class="card" style="margin-bottom: 2rem;">
+                        <h3 style="margin-bottom: 2rem; color: var(--text-primary);">Current Subscription</h3>
+                        <div class="subscription-info">
+                            <div class="subscription-plan">
+                                <div class="plan-badge">Pro Plan</div>
+                                <div class="plan-price">$49<span>/month</span></div>
+                                <div class="plan-status">
+                                    <span class="status-indicator active"></span>
+                                    Active until March 15, 2024
+                                </div>
+                            </div>
+                            
+                            <div class="subscription-actions">
+                                <button class="btn btn-secondary" onclick="showPage('billing')">Change Plan</button>
+                                <button class="btn btn-secondary" onclick="cancelSubscription()">Cancel Subscription</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Available Plans -->
+                    <div class="card" style="margin-bottom: 2rem;">
+                        <h3 style="margin-bottom: 2rem; color: var(--text-primary);">Available Plans</h3>
+                        <div class="plans-grid">
+                            <div class="plan-card">
+                                <div class="plan-header">
+                                    <div class="plan-name">Starter</div>
+                                    <div class="plan-price">$19<span>/month</span></div>
+                                </div>
+                                <div class="plan-features">
+                                    <div class="plan-feature">✅ 1,000 messages/month</div>
+                                    <div class="plan-feature">✅ 3 chatbots</div>
+                                    <div class="plan-feature">✅ 1GB training data</div>
+                                    <div class="plan-feature">✅ Basic analytics</div>
+                                    <div class="plan-feature">✅ Email support</div>
+                                </div>
+                                <button class="btn btn-secondary" onclick="downgradePlan('Starter')">Downgrade</button>
+                            </div>
+                            
+                            <div class="plan-card current">
+                                <div class="plan-header">
+                                    <div class="plan-name">Pro</div>
+                                    <div class="plan-price">$49<span>/month</span></div>
+                                    <div class="plan-badge">Current Plan</div>
+                                </div>
+                                <div class="plan-features">
+                                    <div class="plan-feature">✅ 5,000 messages/month</div>
+                                    <div class="plan-feature">✅ 15 chatbots</div>
+                                    <div class="plan-feature">✅ 5GB training data</div>
+                                    <div class="plan-feature">✅ Advanced analytics</div>
+                                    <div class="plan-feature">✅ Priority support</div>
+                                </div>
+                                <button class="btn btn-primary" disabled>Current Plan</button>
+                            </div>
+                            
+                            <div class="plan-card">
+                                <div class="plan-header">
+                                    <div class="plan-name">Enterprise</div>
+                                    <div class="plan-price">$149<span>/month</span></div>
+                                </div>
+                                <div class="plan-features">
+                                    <div class="plan-feature">✅ 25,000 messages/month</div>
+                                    <div class="plan-feature">✅ Unlimited chatbots</div>
+                                    <div class="plan-feature">✅ 50GB training data</div>
+                                    <div class="plan-feature">✅ Custom analytics</div>
+                                    <div class="plan-feature">✅ 24/7 phone support</div>
+                                </div>
+                                <button class="btn btn-primary">Upgrade</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Payment Method -->
+                    <div class="grid grid-2">
+                        <div class="card">
+                            <h3 style="margin-bottom: 2rem; color: var(--text-primary);">Payment Method</h3>
+                            <div class="payment-method">
+                                <div class="payment-card">
+                                    <div class="card-info">
+                                        <div class="card-type">💳 Visa</div>
+                                        <div class="card-number">**** **** **** 4242</div>
+                                        <div class="card-expiry">Expires 12/25</div>
+                                    </div>
+                                    <div class="card-actions">
+                                        <button class="btn btn-secondary">Update</button>
+                                        <button class="btn btn-secondary">Remove</button>
+                                    </div>
+                                </div>
+                                
+                                <button class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Add Payment Method</button>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <h3 style="margin-bottom: 2rem; color: var(--text-primary);">Billing Address</h3>
+                            <div class="billing-address">
+                                <div class="address-info">
+                                    <div>John Doe</div>
+                                    <div>123 Business Street</div>
+                                    <div>San Francisco, CA 94105</div>
+                                    <div>United States</div>
+                                </div>
+                                
+                                <button class="btn btn-secondary" style="margin-top: 1rem;">Update Address</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Billing History -->
+                    <div class="card" style="margin-top: 2rem;">
+                        <h3 style="margin-bottom: 2rem; color: var(--text-primary);">Billing History</h3>
+                        <div class="table-container">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Description</th>
+                                        <th>Amount</th>
+                                        <th>Status</th>
+                                        <th>Invoice</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Feb 15, 2024</td>
+                                        <td>Pro Plan - Monthly</td>
+                                        <td>$49.00</td>
+                                        <td><span class="badge badge-success">Paid</span></td>
+                                        <td><button class="btn btn-secondary">Download</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Jan 15, 2024</td>
+                                        <td>Pro Plan - Monthly</td>
+                                        <td>$49.00</td>
+                                        <td><span class="badge badge-success">Paid</span></td>
+                                        <td><button class="btn btn-secondary">Download</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Dec 15, 2023</td>
+                                        <td>Pro Plan - Monthly</td>
+                                        <td>$49.00</td>
+                                        <td><span class="badge badge-success">Paid</span></td>
+                                        <td><button class="btn btn-secondary">Download</button></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 13. Team Management -->
+            <div class="page" id="team">
+                <div class="content-header">
+                    <div class="header-top">
+                        <h1 class="page-title">Team Management</h1>
+                        <div class="header-actions">
+                            <button class="btn btn-secondary">Export Members</button>
+                            <button class="btn btn-primary" onclick="inviteTeamMember()">Invite Member</button>
+                        </div>
+                    </div>
+                    <div class="breadcrumb">
+                        <a href="#">Dashboard</a> / Team
+                    </div>
+                </div>
+                
+                <div class="content-body">
+                    <!-- Team Overview -->
+                    <div class="card" style="margin-bottom: 2rem;">
+                        <h3 style="margin-bottom: 2rem; color: var(--text-primary);">Team Overview</h3>
+                        <div class="team-stats">
+                            <div class="team-stat">
+                                <div class="stat-value">8</div>
+                                <div class="stat-label">Team Members</div>
+                            </div>
+                            <div class="team-stat">
+                                <div class="stat-value">15</div>
+                                <div class="stat-label">Max Members</div>
+                            </div>
+                            <div class="team-stat">
+                                <div class="stat-value">2</div>
+                                <div class="stat-label">Pending Invites</div>
+                            </div>
+                            <div class="team-stat">
+                                <div class="stat-value">3</div>
+                                <div class="stat-label">Admin Users</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Team Members -->
+                    <div class="card" style="margin-bottom: 2rem;">
+                        <h3 style="margin-bottom: 2rem; color: var(--text-primary);">Team Members</h3>
+                        <div class="table-container">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Member</th>
+                                        <th>Role</th>
+                                        <th>Status</th>
+                                        <th>Last Active</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>
+                                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                                <div class="avatar">JD</div>
+                                                <div>
+                                                    <div style="color: var(--text-primary); font-weight: 600;">John Doe</div>
+                                                    <div style="color: var(--text-muted); font-size: 0.9rem;">john@company.com</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td><span class="badge badge-success">Owner</span></td>
+                                        <td><span class="badge badge-success">Active</span></td>
+                                        <td>2 hours ago</td>
+                                        <td>
+                                            <button class="btn btn-secondary">Edit</button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                                <div class="avatar">SM</div>
+                                                <div>
+                                                    <div style="color: var(--text-primary); font-weight: 600;">Sarah Miller</div>
+                                                    <div style="color: var(--text-muted); font-size: 0.9rem;">sarah@company.com</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td><span class="badge badge-primary">Admin</span></td>
+                                        <td><span class="badge badge-success">Active</span></td>
+                                        <td>1 day ago</td>
+                                        <td>
+                                            <button class="btn btn-secondary">Edit</button>
+                                            <button class="btn btn-error">Remove</button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                                <div class="avatar">MJ</div>
+                                                <div>
+                                                    <div style="color: var(--text-primary); font-weight: 600;">Mike Johnson</div>
+                                                    <div style="color: var(--text-muted); font-size: 0.9rem;">mike@company.com</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td><span class="badge badge-secondary">Editor</span></td>
+                                        <td><span class="badge badge-success">Active</span></td>
+                                        <td>3 hours ago</td>
+                                        <td>
+                                            <button class="btn btn-secondary">Edit</button>
+                                            <button class="btn btn-error">Remove</button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                                <div class="avatar">LL</div>
+                                                <div>
+                                                    <div style="color: var(--text-primary); font-weight: 600;">Lisa Lee</div>
+                                                    <div style="color: var(--text-muted); font-size: 0.9rem;">lisa@company.com</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td><span class="badge badge-warning">Viewer</span></td>
+                                        <td><span class="badge badge-warning">Pending</span></td>
+                                        <td>Invited 2 days ago</td>
+                                        <td>
+                                            <button class="btn btn-secondary">Resend</button>
+                                            <button class="btn btn-error">Cancel</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Role Permissions -->
+                    <div class="card">
+                        <h3 style="margin-bottom: 2rem; color: var(--text-primary);">Role Permissions</h3>
+                        <div class="permissions-grid">
+                            <div class="permission-role">
+                                <h4>Owner</h4>
+                                <div class="permissions-list">
+                                    <div class="permission-item">✅ Full account access</div>
+                                    <div class="permission-item">✅ Billing management</div>
+                                    <div class="permission-item">✅ Team management</div>
+                                    <div class="permission-item">✅ All chatbot operations</div>
+                                </div>
+                            </div>
+                            
+                            <div class="permission-role">
+                                <h4>Admin</h4>
+                                <div class="permissions-list">
+                                    <div class="permission-item">✅ Team management</div>
+                                    <div class="permission-item">✅ All chatbot operations</div>
+                                    <div class="permission-item">✅ View analytics</div>
+                                    <div class="permission-item">❌ Billing management</div>
+                                </div>
+                            </div>
+                            
+                            <div class="permission-role">
+                                <h4>Editor</h4>
+                                <div class="permissions-list">
+                                    <div class="permission-item">✅ Create/edit chatbots</div>
+                                    <div class="permission-item">✅ View conversations</div>
+                                    <div class="permission-item">✅ Basic analytics</div>
+                                    <div class="permission-item">❌ Team management</div>
+                                </div>
+                            </div>
+                            
+                            <div class="permission-role">
+                                <h4>Viewer</h4>
+                                <div class="permissions-list">
+                                    <div class="permission-item">✅ View chatbots</div>
+                                    <div class="permission-item">✅ View conversations</div>
+                                    <div class="permission-item">❌ Edit chatbots</div>
+                                    <div class="permission-item">❌ Analytics access</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Three.js setup for animated background
+        let scene, camera, renderer, particles, mouseX = 0, mouseY = 0;
+        
+        function initThreeJS() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+            
+            createParticleSystem();
+            
+            camera.position.z = 100;
+            animate();
+        }
+        
+        function createParticleSystem() {
+            const geometry = new THREE.BufferGeometry();
+            const particleCount = 1500;
+            const positions = new Float32Array(particleCount * 3);
+            const velocities = new Float32Array(particleCount * 3);
+            const colors = new Float32Array(particleCount * 3);
+            
+            for (let i = 0; i < particleCount * 3; i += 3) {
+                positions[i] = (Math.random() - 0.5) * 300;
+                positions[i + 1] = (Math.random() - 0.5) * 300;
+                positions[i + 2] = (Math.random() - 0.5) * 300;
+                
+                velocities[i] = (Math.random() - 0.5) * 0.02;
+                velocities[i + 1] = (Math.random() - 0.5) * 0.02;
+                velocities[i + 2] = (Math.random() - 0.5) * 0.02;
+                
+                colors[i] = 0.39 * (Math.random() * 0.6 + 0.4);
+                colors[i + 1] = 0.4 * (Math.random() * 0.6 + 0.4);
+                colors[i + 2] = 0.94 * (Math.random() * 0.6 + 0.4);
+            }
+            
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('velocity', new THREE.BufferAttribute(velocities, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            
+            const material = new THREE.PointsMaterial({
+                size: 2,
+                transparent: true,
+                opacity: 0.6,
+                vertexColors: true,
+                blending: THREE.AdditiveBlending
+            });
+            
+            particles = new THREE.Points(geometry, material);
+            scene.add(particles);
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const targetX = mouseX * 0.0005;
+            const targetY = mouseY * 0.0005;
+            
+            if (particles) {
+                particles.rotation.x += (targetY - particles.rotation.x) * 0.02;
+                particles.rotation.y += (targetX - particles.rotation.y) * 0.02;
+                
+                const positions = particles.geometry.attributes.position.array;
+                const velocities = particles.geometry.attributes.velocity.array;
+                
+                for (let i = 0; i < positions.length; i += 3) {
+                    positions[i] += velocities[i];
+                    positions[i + 1] += velocities[i + 1];
+                    positions[i + 2] += velocities[i + 2];
+                    
+                    if (positions[i] > 150) positions[i] = -150;
+                    if (positions[i] < -150) positions[i] = 150;
+                    if (positions[i + 1] > 150) positions[i + 1] = -150;
+                    if (positions[i + 1] < -150) positions[i + 1] = 150;
+                    if (positions[i + 2] > 150) positions[i + 2] = -150;
+                    if (positions[i + 2] < -150) positions[i + 2] = 150;
+                }
+                
+                particles.geometry.attributes.position.needsUpdate = true;
+            }
+            
+            renderer.render(scene, camera);
+        }
+        
+        // Mouse tracking
+        document.addEventListener('mousemove', (event) => {
+            mouseX = event.clientX - window.innerWidth / 2;
+            mouseY = event.clientY - window.innerHeight / 2;
+        });
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Color Customization Functions
+        const colorSchemes = {
+            default: {
+                primary: '#6366f1',
+                secondary: '#8b5cf6',
+                accent: '#06b6d4',
+                particleColors: [0.39, 0.4, 0.94]
+            },
+            ocean: {
+                primary: '#0ea5e9',
+                secondary: '#06b6d4',
+                accent: '#0891b2',
+                particleColors: [0.05, 0.65, 0.91]
+            },
+            emerald: {
+                primary: '#10b981',
+                secondary: '#059669',
+                accent: '#047857',
+                particleColors: [0.06, 0.73, 0.51]
+            },
+            sunset: {
+                primary: '#f59e0b',
+                secondary: '#ef4444',
+                accent: '#dc2626',
+                particleColors: [0.96, 0.62, 0.04]
+            },
+            rose: {
+                primary: '#ec4899',
+                secondary: '#be185d',
+                accent: '#9d174d',
+                particleColors: [0.93, 0.28, 0.6]
+            },
+            cyber: {
+                primary: '#00ff88',
+                secondary: '#00d4ff',
+                accent: '#ff0080',
+                particleColors: [0, 1, 0.53]
+            }
+        };
+        
+        function toggleColorPanel() {
+            const panel = document.getElementById('colorPanel');
+            panel.classList.toggle('open');
+        }
+        
+        function changeColorScheme(scheme) {
+            const colors = colorSchemes[scheme];
+            const root = document.documentElement;
+            
+            root.style.setProperty('--primary-color', colors.primary);
+            root.style.setProperty('--secondary-color', colors.secondary);
+            root.style.setProperty('--accent-color', colors.accent);
+            
+            document.querySelectorAll('.color-scheme').forEach(el => el.classList.remove('active'));
+            event.target.closest('.color-scheme').classList.add('active');
+            
+            if (particles && particles.geometry.attributes.color) {
+                const colorArray = particles.geometry.attributes.color.array;
+                const [r, g, b] = colors.particleColors;
+                
+                for (let i = 0; i < colorArray.length; i += 3) {
+                    colorArray[i] = r * (Math.random() * 0.6 + 0.4);
+                    colorArray[i + 1] = g * (Math.random() * 0.6 + 0.4);
+                    colorArray[i + 2] = b * (Math.random() * 0.6 + 0.4);
+                }
+                
+                particles.geometry.attributes.color.needsUpdate = true;
+            }
+            
+            setTimeout(() => {
+                document.getElementById('colorPanel').classList.remove('open');
+            }, 500);
+        }
+        
+        // Close color panel when clicking outside
+        document.addEventListener('click', (e) => {
+            const panel = document.getElementById('colorPanel');
+            const toggle = panel.querySelector('.color-panel-toggle');
+            
+            if (!panel.contains(e.target) && !toggle.contains(e.target)) {
+                panel.classList.remove('open');
+            }
+        });
+
+        // Dashboard Navigation
+        function showPage(pageId) {
+            // Hide all pages
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            
+            // Show selected page
+            document.getElementById(pageId).classList.add('active');
+            
+            // Update navigation
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            document.querySelector(`[data-page="${pageId}"]`).classList.add('active');
+        }
+
+        // Sidebar Toggle
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            sidebar.classList.toggle('collapsed');
+        }
+
+        // Chart Initialization
+        function initCharts() {
+            // Performance Chart
+            const ctx = document.getElementById('performanceChart');
+            if (ctx) {
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                        datasets: [{
+                            label: 'Conversations',
+                            data: [1200, 1900, 3000, 5000, 2000, 3000],
+                            borderColor: '#6366f1',
+                            backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                },
+                                ticks: {
+                                    color: '#94a3b8'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                },
+                                ticks: {
+                                    color: '#94a3b8'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Usage Chart
+            const usageCtx = document.getElementById('usageChart');
+            if (usageCtx) {
+                new Chart(usageCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Messages Used', 'Messages Remaining'],
+                        datasets: [{
+                            data: [2847, 2153],
+                            backgroundColor: [
+                                '#6366f1',
+                                'rgba(255, 255, 255, 0.1)'
+                            ],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    color: '#94a3b8',
+                                    padding: 20
+                                }
+                            }
+                        },
+                        cutout: '70%'
+                    }
+                });
+            }
+        }
+
+        // File Upload Handler
+        function handleFileUpload(event) {
+            const files = event.target.files;
+            if (files.length > 0) {
+                // Simulate upload progress
+                showUploadProgress();
+            }
+        }
+
+        function showUploadProgress() {
+            // Add upload progress UI
+            const uploadArea = document.querySelector('.upload-area');
+            uploadArea.innerHTML = `
+                <div class="upload-progress">
+                    <div class="upload-icon">⏳</div>
+                    <h4 style="color: var(--text-primary); margin-bottom: 1rem;">Uploading...</h4>
+                    <div style="width: 100%; background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden; margin-bottom: 1rem;">
+                        <div style="width: 0%; height: 8px; background: var(--primary-color); transition: width 2s ease;" id="progressBar"></div>
+                    </div>
+                    <p style="color: var(--text-muted);">Processing training data...</p>
+                </div>
+            `;
+            
+            // Animate progress
+            setTimeout(() => {
+                document.getElementById('progressBar').style.width = '100%';
+            }, 100);
+            
+            // Reset after completion
+            setTimeout(() => {
+                uploadArea.innerHTML = `
+                    <div class="upload-icon">📁</div>
+                    <h4 style="color: var(--text-primary); margin-bottom: 1rem;">Drop files here or click to upload</h4>
+                    <p style="color: var(--text-muted);">Supports: PDF, TXT, CSV, JSON</p>
+                `;
+            }, 3000);
+        }
+
+        // Copy to Clipboard
+        function copyToClipboard() {
+            const code = document.querySelector('.code-block code').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                // Show success message
+                const button = event.target;
+                const originalText = button.textContent;
+                button.textContent = 'Copied!';
+                button.style.background = 'var(--success-color)';
+                
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.background = '';
+                }, 2000);
+            });
+        }
+
+        // Add Q&A Pair
+        function addQAPair() {
+            const container = document.querySelector('.qa-list');
+            const qaItem = document.createElement('div');
+            qaItem.className = 'qa-item';
+            qaItem.innerHTML = `
+                <div class="qa-header">
+                    <div class="qa-title">New Q&A Pair</div>
+                    <button class="btn-remove" onclick="removeQAPair(this)">×</button>
+                </div>
+                <div class="qa-body">
+                    <div class="form-group">
+                        <label class="form-label">Question</label>
+                        <input type="text" class="form-input" placeholder="What question might users ask?">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Answer</label>
+                        <textarea class="form-textarea" placeholder="Provide a helpful answer..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Keywords (comma-separated)</label>
+                        <input type="text" class="form-input" placeholder="support, help, faq">
+                    </div>
+                </div>
+            `;
+            container.appendChild(qaItem);
+        }
+
+        function removeQAPair(button) {
+            button.closest('.qa-item').remove();
+        }
+
+        // Team Management Functions
+        function inviteTeamMember() {
+            const email = prompt('Enter email address to invite:');
+            const role = prompt('Enter role (Admin, Editor, Viewer):');
+            
+            if (email && role) {
+                // Simulate API call
+                setTimeout(() => {
+                    alert(`Invitation sent to ${email} as ${role}`);
+                    // Add pending member to table
+                    addPendingMember(email, role);
+                }, 1000);
+            }
+        }
+
+        function addPendingMember(email, role) {
+            const tbody = document.querySelector('#team table tbody');
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <div class="avatar">${email.charAt(0).toUpperCase()}</div>
+                        <div>
+                            <div style="color: var(--text-primary); font-weight: 600;">${email}</div>
+                            <div style="color: var(--text-muted); font-size: 0.9rem;">${email}</div>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge badge-secondary">${role}</span></td>
+                <td><span class="badge badge-warning">Pending</span></td>
+                <td>Just invited</td>
+                <td>
+                    <button class="btn btn-secondary" onclick="resendInvite(this)">Resend</button>
+                    <button class="btn btn-error" onclick="cancelInvite(this)">Cancel</button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        }
+
+        function resendInvite(button) {
+            const row = button.closest('tr');
+            const email = row.querySelector('td div div').textContent;
+            
+            button.textContent = 'Sending...';
+            button.disabled = true;
+            
+            setTimeout(() => {
+                button.textContent = 'Sent!';
+                setTimeout(() => {
+                    button.textContent = 'Resend';
+                    button.disabled = false;
+                }, 2000);
+            }, 1500);
+        }
+
+        function cancelInvite(button) {
+            if (confirm('Are you sure you want to cancel this invitation?')) {
+                button.closest('tr').remove();
+            }
+        }
+
+        function removeTeamMember(button) {
+            const row = button.closest('tr');
+            const memberName = row.querySelector('td div div').textContent;
+            
+            if (confirm(`Are you sure you want to remove ${memberName} from the team?`)) {
+                row.remove();
+            }
+        }
+
+        // Billing Functions
+        function upgradePlan(planName) {
+            if (confirm(`Upgrade to ${planName} plan?`)) {
+                // Simulate upgrade process
+                const button = event.target;
+                button.textContent = 'Processing...';
+                button.disabled = true;
+                
+                setTimeout(() => {
+                    alert(`Successfully upgraded to ${planName} plan!`);
+                    location.reload(); // Refresh to show new plan
+                }, 2000);
+            }
+        }
+
+        function downgradePlan(planName) {
+            if (confirm(`Downgrade to ${planName} plan? This will take effect at the end of your current billing cycle.`)) {
+                alert(`Downgrade to ${planName} scheduled for end of billing cycle.`);
+            }
+        }
+
+        function cancelSubscription() {
+            if (confirm('Are you sure you want to cancel your subscription? This will take effect at the end of your current billing cycle.')) {
+                alert('Subscription cancellation scheduled for end of billing cycle.');
+            }
+        }
+
+        function updatePaymentMethod() {
+            alert('Payment method update feature would integrate with Stripe/payment processor.');
+        }
+
+        function downloadInvoice(button) {
+            button.textContent = 'Downloading...';
+            
+            setTimeout(() => {
+                button.textContent = 'Downloaded!';
+                setTimeout(() => {
+                    button.textContent = 'Download';
+                }, 2000);
+                
+                // Simulate download
+                const link = document.createElement('a');
+                link.href = 'data:text/plain;charset=utf-8,Sample Invoice Content';
+                link.download = 'invoice.pdf';
+                link.click();
+            }, 1000);
+        }
+
+        // Usage & Limits Functions
+        function dismissAlert(button) {
+            button.closest('.alert-item').style.opacity = '0.5';
+            button.textContent = 'Dismissed';
+            button.disabled = true;
+        }
+
+        function upgradeFromAlert() {
+            showPage('billing');
+        }
+
+        // Navigation Enhancement
+        function showPage(pageId) {
+            // Hide all pages
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            
+            // Show selected page
+            document.getElementById(pageId).classList.add('active');
+            
+            // Update navigation
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Find and activate the corresponding nav item
+            const navItem = document.querySelector(`[onclick="showPage('${pageId}')"]`);
+            if (navItem) {
+                navItem.classList.add('active');
+            }
+        }
+
+        // Initialize everything when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            initThreeJS();
+            initCharts();
+            
+            // Setup file input
+            const fileInput = document.getElementById('fileInput');
+            if (fileInput) {
+                fileInput.addEventListener('change', handleFileUpload);
+            }
+            
+            // Setup navigation clicks
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const pageId = this.getAttribute('data-page');
+                    if (pageId) {
+                        showPage(pageId);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

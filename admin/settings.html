@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Settings - ChatFlow AI</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary-color: #6366f1;
+            --secondary-color: #8b5cf6;
+            --accent-color: #06b6d4;
+            --text-primary: #ffffff;
+            --text-secondary: #e2e8f0;
+            --text-muted: #94a3b8;
+            --bg-primary: #0f172a;
+            --bg-secondary: rgba(15, 23, 42, 0.8);
+            --border-color: rgba(99, 102, 241, 0.2);
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --error-color: #ef4444;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        
+        .content-overlay {
+            position: relative;
+            z-index: 2;
+            background: rgba(15, 23, 42, 0.1);
+            min-height: 100vh;
+        }
+
+        /* Navigation - Same as other admin pages */
+        .admin-nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 1rem 2rem;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+            z-index: 100;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .admin-logo {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            text-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+            text-decoration: none;
+        }
+
+        .admin-badge {
+            background: linear-gradient(135deg, var(--error-color), #dc2626);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin-left: 1rem;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+        
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-links a:hover {
+            color: var(--primary-color);
+        }
+
+        .admin-user {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: var(--text-secondary);
+        }
+
+        .admin-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--error-color), #dc2626);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        /* Main Layout */
+        .admin-container {
+            display: flex;
+            min-height: 100vh;
+            padding-top: 80px;
+        }
+
+        /* Sidebar - Same as other admin pages */
+        .admin-sidebar {
+            width: 280px;
+            background: rgba(15, 23, 42, 0.9);
+            border-right: 1px solid var(--border-color);
+            padding: 2rem;
+            position: fixed;
+            height: calc(100vh - 80px);
+            overflow-y: auto;
+        }
+
+        .sidebar-section {
+            margin-bottom: 2rem;
+        }
+
+        .sidebar-title {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1rem;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+        }
+
+        .sidebar-menu li {
+            margin-bottom: 0.5rem;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 1.5rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            position: relative;
+        }
+
+        .sidebar-menu a:hover {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--primary-color);
+        }
+
+        .sidebar-menu a.active {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+        }
+
+        .sidebar-icon {
+            font-size: 1.2rem;
+            width: 20px;
+        }
+
+        .sidebar-badge {
+            position: absolute;
+            right: 10px;
+            background: var(--error-color);
+            color: white;
+            border-radius: 10px;
+            padding: 2px 6px;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+
+        /* Content Area */
+        .admin-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 2rem;
+        }
+
+        .page-header {
+            margin-bottom: 3rem;
+        }
+
+        .page-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--text-primary), var(--primary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .page-subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        /* Settings Cards */
+        .settings-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+
+        .settings-card {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 2.5rem;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.1);
+        }
+
+        .settings-section {
+            margin-bottom: 3rem;
+        }
+
+        .settings-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .section-icon {
+            font-size: 1.3rem;
+        }
+
+        /* Form Elements */
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 2rem;
+        }
+
+        .form-label {
+            display: block;
+            color: var(--text-secondary);
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            font-size: 0.95rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .form-textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        /* Toggle Switches */
+        .toggle-group {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+        }
+
+        .toggle-info {
+            flex: 1;
+        }
+
+        .toggle-info h4 {
+            color: var(--text-primary);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .toggle-info p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 60px;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-left: 2rem;
+        }
+
+        .toggle-switch.active {
+            background: var(--primary-color);
+        }
+
+        .toggle-slider {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 24px;
+            height: 24px;
+            background: white;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-switch.active .toggle-slider {
+            transform: translateX(30px);
+        }
+
+        /* Status Indicators */
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            margin-bottom: 1rem;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .status-healthy {
+            background: var(--success-color);
+        }
+
+        .status-warning {
+            background: var(--warning-color);
+        }
+
+        .status-error {
+            background: var(--error-color);
+        }
+
+        .status-text h4 {
+            color: var(--text-primary);
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .status-text p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .status-value {
+            margin-left: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-primary);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .btn-danger {
+            background: var(--error-color);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        /* Success Message */
+        .success-message {
+            display: none;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: var(--success-color);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            font-weight: 600;
+        }
+
+        /* Danger Zone */
+        .danger-zone {
+            border: 2px solid var(--error-color);
+            border-radius: 15px;
+            padding: 2rem;
+            background: rgba(239, 68, 68, 0.05);
+            margin-top: 2rem;
+        }
+
+        .danger-title {
+            color: var(--error-color);
+            font-weight: 700;
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        /* System Metrics */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 900;
+            color: var(--primary-color);
+            font-family: 'JetBrains Mono', monospace;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .admin-sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            .admin-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .btn-group {
+                flex-direction: column;
+            }
+
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container"></div>
+
+    <div class="content-overlay">
+        <!-- Navigation -->
+        <nav class="admin-nav">
+            <div class="nav-container">
+                <div style="display: flex; align-items: center;">
+                    <a href="../index.html" class="admin-logo">ChatFlow AI</a>
+                    <span class="admin-badge">ADMIN</span>
+                </div>
+                <div class="nav-links">
+                    <a href="../index.html">View Site</a>
+                    <a href="#">Documentation</a>
+                </div>
+                <div class="admin-user">
+                    <span>Admin User</span>
+                    <div class="admin-avatar">AU</div>
+                </div>
+            </div>
+        </nav>
+
+        <div class="admin-container">
+            <!-- Sidebar -->
+            <aside class="admin-sidebar">
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Overview</div>
+                    <ul class="sidebar-menu">
+                        <li>
+                            <a href="dashboard.html">
+                                <span class="sidebar-icon">📊</span>
+                                Dashboard
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#">
+                                <span class="sidebar-icon">📈</span>
+                                Analytics
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Management</div>
+                    <ul class="sidebar-menu">
+                        <li>
+                            <a href="users.html">
+                                <span class="sidebar-icon">👥</span>
+                                Users
+                                <span class="sidebar-badge">1,247</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="chatbots.html">
+                                <span class="sidebar-icon">🤖</span>
+                                Chatbots
+                                <span class="sidebar-badge">3,892</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#">
+                                <span class="sidebar-icon">💬</span>
+                                Conversations
+                                <span class="sidebar-badge">15.2K</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#">
+                                <span class="sidebar-icon">💳</span>
+                                Billing
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="sidebar-title">System</div>
+                    <ul class="sidebar-menu">
+                        <li>
+                            <a href="settings.html" class="active">
+                                <span class="sidebar-icon">⚙️</span>
+                                Settings
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#">
+                                <span class="sidebar-icon">🔐</span>
+                                Security
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#">
+                                <span class="sidebar-icon">📝</span>
+                                Logs
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#">
+                                <span class="sidebar-icon">🛠️</span>
+                                Maintenance
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </aside>
+
+            <!-- Content Area -->
+            <main class="admin-content">
+                <div class="page-header">
+                    <h1 class="page-title">System Settings</h1>
+                    <p class="page-subtitle">Configure platform settings and monitor system health</p>
+                </div>
+
+                <div class="success-message" id="successMessage">
+                    ✅ Settings updated successfully!
+                </div>
+
+                <div class="settings-grid">
+                    <!-- System Health -->
+                    <div class="settings-card">
+                        <div class="settings-section">
+                            <h3 class="section-title">
+                                <span class="section-icon">🏥</span>
+                                System Health
+                            </h3>
+                            
+                            <div class="metrics-grid">
+                                <div class="metric-card">
+                                    <div class="metric-value">99.9%</div>
+                                    <div class="metric-label">Uptime</div>
+                                </div>
+                                <div class="metric-card">
+                                    <div class="metric-value">2.1s</div>
+                                    <div class="metric-label">Avg Response</div>
+                                </div>
+                                <div class="metric-card">
+                                    <div class="metric-value">45.2K</div>
+                                    <div class="metric-label">Requests/Hour</div>
+                                </div>
+                                <div class="metric-card">
+                                    <div class="metric-value">12GB</div>
+                                    <div class="metric-label">Memory Usage</div>
+                                </div>
+                            </div>
+                            
+                            <div class="status-indicator">
+                                <div class="status-dot status-healthy"></div>
+                                <div class="status-text">
+                                    <h4>API Services</h4>
+                                    <p>All systems operational</p>
+                                </div>
+                                <div class="status-value">✓ Healthy</div>
+                            </div>
+                            
+                            <div class="status-indicator">
+                                <div class="status-dot status-healthy"></div>
+                                <div class="status-text">
+                                    <h4>Database</h4>
+                                    <p>Connection pool stable</p>
+                                </div>
+                                <div class="status-value">✓ Healthy</div>
+                            </div>
+                            
+                            <div class="status-indicator">
+                                <div class="status-dot status-warning"></div>
+                                <div class="status-text">
+                                    <h4>Background Jobs</h4>
+                                    <p>Queue processing normally</p>
+                                </div>
+                                <div class="status-value">⚠ High Load</div>
+                            </div>
+                            
+                            <div class="status-indicator">
+                                <div class="status-dot status-healthy"></div>
+                                <div class="status-text">
+                                    <h4>AI Models</h4>
+                                    <p>All models responding</p>
+                                </div>
+                                <div class="status-value">✓ Healthy</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Platform Configuration -->
+                    <div class="settings-card">
+                        <div class="settings-section">
+                            <h3 class="section-title">
+                                <span class="section-icon">⚙️</span>
+                                Platform Configuration
+                            </h3>
+                            
+                            <form id="platformSettings">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-label">Platform Name</label>
+                                        <input type="text" class="form-input" value="ChatFlow AI" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Support Email</label>
+                                        <input type="email" class="form-input" value="support@chatflowai.com" required>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-label">Default Plan</label>
+                                        <select class="form-select">
+                                            <option value="starter">Starter</option>
+                                            <option value="professional" selected>Professional</option>
+                                            <option value="enterprise">Enterprise</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Trial Period (Days)</label>
+                                        <input type="number" class="form-input" value="14" required>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Maintenance Message</label>
+                                    <textarea class="form-input form-textarea" placeholder="Message displayed during maintenance...">System maintenance scheduled for tonight at 2 AM UTC. Expected downtime: 30 minutes.</textarea>
+                                </div>
+
+                                <div class="btn-group">
+                                    <button type="submit" class="btn btn-primary">Save Platform Settings</button>
+                                    <button type="button" class="btn btn-secondary">Reset to Defaults</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Feature Toggles -->
+                    <div class="settings-card">
+                        <div class="settings-section">
+                            <h3 class="section-title">
+                                <span class="section-icon">🎛️</span>
+                                Feature Toggles
+                            </h3>
+                            
+                            <div class="toggle-group">
+                                <div class="toggle-info">
+                                    <h4>New User Registration</h4>
+                                    <p>Allow new users to create accounts and start trials</p>
+                                </div>
+                                <div class="toggle-switch active" onclick="toggleFeature(this)">
+                                    <div class="toggle-slider"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="toggle-group">
+                                <div class="toggle-info">
+                                    <h4>AI Model Updates</h4>
+                                    <p>Enable automatic updates to AI models and training data</p>
+                                </div>
+                                <div class="toggle-switch active" onclick="toggleFeature(this)">
+                                    <div class="toggle-slider"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="toggle-group">
+                                <div class="toggle-info">
+                                    <h4>Advanced Analytics</h4>
+                                    <p>Collect detailed usage analytics and performance metrics</p>
+                                </div>
+                                <div class="toggle-switch active" onclick="toggleFeature(this)">
+                                    <div class="toggle-slider"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="toggle-group">
+                                <div class="toggle-info">
+                                    <h4>Beta Features</h4>
+                                    <p>Enable experimental features for testing and feedback</p>
+                                </div>
+                                <div class="toggle-switch" onclick="toggleFeature(this)">
+                                    <div class="toggle-slider"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="toggle-group">
+                                <div class="toggle-info">
+                                    <h4>Maintenance Mode</h4>
+                                    <p>Enable maintenance mode to prevent new user activity</p>
+                                </div>
+                                <div class="toggle-switch" onclick="toggleFeature(this)">
+                                    <div class="toggle-slider"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- API & Limits -->
+                    <div class="settings-card">
+                        <div class="settings-section">
+                            <h3 class="section-title">
+                                <span class="section-icon">🔌</span>
+                                API & Rate Limits
+                            </h3>
+                            
+                            <form id="apiSettings">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-label">Rate Limit (req/min)</label>
+                                        <input type="number" class="form-input" value="1000" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Burst Limit</label>
+                                        <input type="number" class="form-input" value="5000" required>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-label">Max Conversations/User</label>
+                                        <input type="number" class="form-input" value="10000" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Max Chatbots/User</label>
+                                        <input type="number" class="form-input" value="50" required>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Webhook Timeout (seconds)</label>
+                                    <input type="number" class="form-input" value="30" required>
+                                </div>
+
+                                <div class="btn-group">
+                                    <button type="submit" class="btn btn-primary">Update API Settings</button>
+                                    <button type="button" class="btn btn-secondary">Test Limits</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Security Settings -->
+                    <div class="settings-card">
+                        <div class="settings-section">
+                            <h3 class="section-title">
+                                <span class="section-icon">🔐</span>
+                                Security Configuration
+                            </h3>
+                            
+                            <div class="toggle-group">
+                                <div class="toggle-info">
+                                    <h4>Two-Factor Authentication</h4>
+                                    <p>Require 2FA for all admin accounts</p>
+                                </div>
+                                <div class="toggle-switch active" onclick="toggleFeature(this)">
+                                    <div class="toggle-slider"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="toggle-group">
+                                <div class="toggle-info">
+                                    <h4>Session Monitoring</h4>
+                                    <p>Track and log all user session activities</p>
+                                </div>
+                                <div class="toggle-switch active" onclick="toggleFeature(this)">
+                                    <div class="toggle-slider"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="toggle-group">
+                                <div class="toggle-info">
+                                    <h4>IP Whitelisting</h4>
+                                    <p>Enable IP-based access restrictions for admin panel</p>
+                                </div>
+                                <div class="toggle-switch" onclick="toggleFeature(this)">
+                                    <div class="toggle-slider"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Session Timeout (minutes)</label>
+                                    <input type="number" class="form-input" value="30" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Max Login Attempts</label>
+                                    <input type="number" class="form-input" value="5" required>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Backup & Data -->
+                    <div class="settings-card">
+                        <div class="settings-section">
+                            <h3 class="section-title">
+                                <span class="section-icon">💾</span>
+                                Backup & Data Management
+                            </h3>
+                            
+                            <div class="status-indicator">
+                                <div class="status-dot status-healthy"></div>
+                                <div class="status-text">
+                                    <h4>Last Backup</h4>
+                                    <p>Daily backup completed successfully</p>
+                                </div>
+                                <div class="status-value">2 hours ago</div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Backup Frequency</label>
+                                    <select class="form-select">
+                                        <option value="hourly">Hourly</option>
+                                        <option value="daily" selected>Daily</option>
+                                        <option value="weekly">Weekly</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Retention Period (days)</label>
+                                    <input type="number" class="form-input" value="30" required>
+                                </div>
+                            </div>
+                            
+                            <div class="btn-group">
+                                <button class="btn btn-primary">Create Backup Now</button>
+                                <button class="btn btn-secondary">Download Backup</button>
+                                <button class="btn btn-secondary">View Backup History</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Danger Zone -->
+                    <div class="settings-card">
+                        <div class="danger-zone">
+                            <h3 class="danger-title">
+                                <span>⚠️</span>
+                                Danger Zone
+                            </h3>
+                            <p style="color: var(--text-secondary); margin-bottom: 2rem; line-height: 1.6;">
+                                These actions are irreversible and can cause significant disruption to the platform. 
+                                Please proceed with extreme caution.
+                            </p>
+                            
+                            <div class="btn-group">
+                                <button class="btn btn-danger">Reset All User Data</button>
+                                <button class="btn btn-danger">Purge System Logs</button>
+                                <button class="btn btn-danger">Factory Reset</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Three.js setup for animated background
+        let scene, camera, renderer, particles, mouseX = 0, mouseY = 0;
+        
+        function initThreeJS() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+            
+            createParticleSystem();
+            
+            camera.position.z = 100;
+            animate();
+        }
+        
+        function createParticleSystem() {
+            const geometry = new THREE.BufferGeometry();
+            const particleCount = 1000;
+            const positions = new Float32Array(particleCount * 3);
+            const velocities = new Float32Array(particleCount * 3);
+            const colors = new Float32Array(particleCount * 3);
+            
+            for (let i = 0; i < particleCount * 3; i += 3) {
+                positions[i] = (Math.random() - 0.5) * 300;
+                positions[i + 1] = (Math.random() - 0.5) * 300;
+                positions[i + 2] = (Math.random() - 0.5) * 300;
+                
+                velocities[i] = (Math.random() - 0.5) * 0.02;
+                velocities[i + 1] = (Math.random() - 0.5) * 0.02;
+                velocities[i + 2] = (Math.random() - 0.5) * 0.02;
+                
+                colors[i] = 0.39 * (Math.random() * 0.6 + 0.4);
+                colors[i + 1] = 0.4 * (Math.random() * 0.6 + 0.4);
+                colors[i + 2] = 0.94 * (Math.random() * 0.6 + 0.4);
+            }
+            
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('velocity', new THREE.BufferAttribute(velocities, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            
+            const material = new THREE.PointsMaterial({
+                size: 1.5,
+                transparent: true,
+                opacity: 0.4,
+                vertexColors: true,
+                blending: THREE.AdditiveBlending
+            });
+            
+            particles = new THREE.Points(geometry, material);
+            scene.add(particles);
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const targetX = mouseX * 0.0005;
+            const targetY = mouseY * 0.0005;
+            
+            if (particles) {
+                particles.rotation.x += (targetY - particles.rotation.x) * 0.02;
+                particles.rotation.y += (targetX - particles.rotation.y) * 0.02;
+                
+                const positions = particles.geometry.attributes.position.array;
+                const velocities = particles.geometry.attributes.velocity.array;
+                
+                for (let i = 0; i < positions.length; i += 3) {
+                    positions[i] += velocities[i];
+                    positions[i + 1] += velocities[i + 1];
+                    positions[i + 2] += velocities[i + 2];
+                    
+                    if (positions[i] > 150) positions[i] = -150;
+                    if (positions[i] < -150) positions[i] = 150;
+                    if (positions[i + 1] > 150) positions[i + 1] = -150;
+                    if (positions[i + 1] < -150) positions[i + 1] = 150;
+                    if (positions[i + 2] > 150) positions[i + 2] = -150;
+                    if (positions[i + 2] < -150) positions[i + 2] = 150;
+                }
+                
+                particles.geometry.attributes.position.needsUpdate = true;
+            }
+            
+            renderer.render(scene, camera);
+        }
+        
+        // Mouse tracking
+        document.addEventListener('mousemove', (event) => {
+            mouseX = event.clientX - window.innerWidth / 2;
+            mouseY = event.clientY - window.innerHeight / 2;
+        });
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Toggle Feature Function
+        function toggleFeature(toggle) {
+            toggle.classList.toggle('active');
+        }
+
+        // Form Submissions
+        document.getElementById('platformSettings').addEventListener('submit', function(e) {
+            e.preventDefault();
+            showSuccessMessage();
+        });
+
+        document.getElementById('apiSettings').addEventListener('submit', function(e) {
+            e.preventDefault();
+            showSuccessMessage();
+        });
+
+        function showSuccessMessage() {
+            const successMessage = document.getElementById('successMessage');
+            successMessage.style.display = 'block';
+            
+            // Scroll to top to show success message
+            document.querySelector('.admin-content').scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+            
+            // Hide success message after 5 seconds
+            setTimeout(() => {
+                successMessage.style.display = 'none';
+            }, 5000);
+        }
+
+        // Initialize
+        initThreeJS();
+    </script>
+</body>
+</html>

@@ -1,0 +1,116 @@
+version: '3.8'
+
+# Development version of docker-compose
+# Use with: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  # Override main services for development
+  data-ingestion:
+    build:
+      context: .
+      target: development
+    environment:
+      - DEVELOPMENT=true
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+    volumes:
+      - .:/app:ro  # Mount source code for hot reload
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+    command: ["uvicorn", "backend.data_ingestion:app", "--host", "0.0.0.0", "--port", "8001", "--reload"]
+
+  vector-search:
+    build:
+      context: .
+      target: development
+    environment:
+      - DEVELOPMENT=true
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+    volumes:
+      - .:/app:ro
+      - ./models:/app/models
+      - ./logs:/app/logs
+    command: ["uvicorn", "backend.vector_search:search_app", "--host", "0.0.0.0", "--port", "8002", "--reload"]
+
+  training-pipeline:
+    build:
+      context: .
+      target: development
+    environment:
+      - DEVELOPMENT=true
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+    volumes:
+      - .:/app:ro
+      - ./models:/app/models
+      - ./logs:/app/logs
+    command: ["uvicorn", "backend.training_pipeline:training_app", "--host", "0.0.0.0", "--port", "8003", "--reload"]
+
+  performance-optimizer:
+    build:
+      context: .
+      target: development
+    environment:
+      - DEVELOPMENT=true
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+    volumes:
+      - .:/app:ro
+      - ./logs:/app/logs
+    command: ["uvicorn", "backend.performance_optimizer:perf_app", "--host", "0.0.0.0", "--port", "8004", "--reload"]
+
+  monitoring-analytics:
+    build:
+      context: .
+      target: development
+    environment:
+      - DEVELOPMENT=true
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+    volumes:
+      - .:/app:ro
+      - ./logs:/app/logs
+
+  # Development tools
+  jupyter:
+    build:
+      context: .
+      target: development
+    container_name: chatflow-jupyter
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME:-chatbot_training}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - REDIS_URL=redis://redis:6379/0
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    ports:
+      - "8888:8888"
+    volumes:
+      - .:/app
+      - ./notebooks:/app/notebooks
+      - ./models:/app/models
+    command: ["jupyter", "lab", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--allow-root", "--NotebookApp.token=''", "--NotebookApp.password=''"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - chatflow-network
+
+  # Development database with exposed port
+  postgres:
+    ports:
+      - "5433:5432"  # Different port to avoid conflicts
+    environment:
+      - POSTGRES_DB=${DB_NAME:-chatbot_training_dev}
+      - POSTGRES_USER=${DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-devpassword}
+
+  # Redis with exposed port
+  redis:
+    ports:
+      - "6380:6379"  # Different port to avoid conflicts

@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management - ChatFlow AI Admin</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary-color: #6366f1;
+            --secondary-color: #8b5cf6;
+            --accent-color: #06b6d4;
+            --text-primary: #ffffff;
+            --text-secondary: #e2e8f0;
+            --text-muted: #94a3b8;
+            --bg-primary: #0f172a;
+            --bg-secondary: rgba(15, 23, 42, 0.8);
+            --border-color: rgba(99, 102, 241, 0.2);
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --error-color: #ef4444;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        
+        .content-overlay {
+            position: relative;
+            z-index: 2;
+            background: rgba(15, 23, 42, 0.1);
+            min-height: 100vh;
+        }
+
+        /* Navigation */
+        .admin-nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 1rem 2rem;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+            z-index: 100;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .admin-logo {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            text-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+            text-decoration: none;
+        }
+
+        .admin-badge {
+            background: linear-gradient(135deg, var(--error-color), #dc2626);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin-left: 1rem;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+        
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-links a:hover {
+            color: var(--primary-color);
+        }
+
+        .admin-user {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: var(--text-secondary);
+        }
+
+        .admin-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--error-color), #dc2626);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        /* Main Layout */
+        .admin-container {
+            display: flex;
+            min-height: 100vh;
+            padding-top: 80px;
+        }
+
+        /* Sidebar */
+        .admin-sidebar {
+            width: 280px;
+            background: rgba(15, 23, 42, 0.9);
+            border-right: 1px solid var(--border-color);
+            padding: 2rem;
+            position: fixed;
+            height: calc(100vh - 80px);
+            overflow-y: auto;
+        }
+
+        .sidebar-section {
+            margin-bottom: 2rem;
+        }
+
+        .sidebar-title {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1rem;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+        }
+
+        .sidebar-menu li {
+            margin-bottom: 0.5rem;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 1.5rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            position: relative;
+        }
+
+        .sidebar-menu a:hover {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--primary-color);
+        }
+
+        .sidebar-menu a.active {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+        }
+
+        .sidebar-icon {
+            font-size: 1.2rem;
+            width: 20px;
+        }
+
+        .sidebar-badge {
+            position: absolute;
+            right: 10px;
+            background: var(--error-color);
+            color: white;
+            border-radius: 10px;
+            padding: 2px 6px;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+
+        /* Content Area */
+        .admin-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 2rem;
+        }
+
+        .page-header {
+            margin-bottom: 3rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .page-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--text-primary), var(--primary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .page-subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .page-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border-color);
+            border-radius: 15px;
+            padding: 1.5rem;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 50px rgba(99, 102, 241, 0.2);
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .stat-title {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .stat-icon {
+            font-size: 1.2rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 900;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Filters and Search */
+        .filters-section {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border-color);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            backdrop-filter: blur(20px);
+        }
+
+        .filters-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr auto;
+            gap: 1rem;
+            align-items: end;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .filter-label {
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .filter-input {
+            padding: 0.75rem 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .filter-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .filter-select {
+            padding: 0.75rem 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        /* Users Table */
+        .users-table {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border-color);
+            border-radius: 15px;
+            padding: 0;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.1);
+            overflow: hidden;
+        }
+
+        .table-header {
+            padding: 2rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .table-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .table-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 1.5rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        th {
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        td {
+            color: var(--text-primary);
+        }
+
+        tr:hover td {
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        .user-cell {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .user-info h4 {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .user-info p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        /* Status Badges */
+        .status-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            text-align: center;
+            min-width: 80px;
+        }
+
+        .status-active {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success-color);
+        }
+
+        .status-trial {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning-color);
+        }
+
+        .status-suspended {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--error-color);
+        }
+
+        .status-inactive {
+            background: rgba(107, 114, 128, 0.2);
+            color: var(--text-muted);
+        }
+
+        /* Plan Badges */
+        .plan-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            min-width: 90px;
+        }
+
+        .plan-starter {
+            background: rgba(99, 102, 241, 0.2);
+            color: var(--primary-color);
+        }
+
+        .plan-professional {
+            background: rgba(139, 92, 246, 0.2);
+            color: var(--secondary-color);
+        }
+
+        .plan-enterprise {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning-color);
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-primary);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .btn-danger {
+            background: var(--error-color);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .btn-sm {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* Pagination */
+        .pagination {
+            padding: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .pagination-info {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .pagination-controls {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .pagination-btn {
+            padding: 0.5rem 1rem;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .pagination-btn:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .pagination-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .admin-sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            .admin-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+
+            .filters-row {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            table {
+                font-size: 0.8rem;
+            }
+
+            th, td {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container"></div>
+
+    <div class="content-overlay">
+        <!-- Navigation -->
+        <nav class="admin-nav">
+            <div class="nav-container">
+                <div style="display: flex; align-items: center;">
+                    <a href="../index.html" class="admin-logo">ChatFlow AI</a>
+                    <span class="admin-badge">ADMIN</span>
+                </div>
+                <div class="nav-links">
+                    <a href="../index.html">View Site</a>
+                    <a href="#">Documentation</a>
+                </div>
+                <div class="admin-user">
+                    <span>Admin User</span>
+                    <div class="admin-avatar">AU</div>
+                </div>
+            </div>
+        </nav>
+
+        <div class="admin-container">
+            <!-- Sidebar -->
+            <aside class="admin-sidebar">
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Overview</div>
+                    <ul class="sidebar-menu">
+                        <li>
+                            <a href="dashboard.html">
+                                <span class="sidebar-icon">📊</span>
+                                Dashboard
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#">
+                                <span class="sidebar-icon">📈</span>
+                                Analytics
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Management</div>
+                    <ul class="sidebar-menu">
+                        <li>
+                            <a href="users.html" class="active">
+                                <span class="sidebar-icon">👥</span>
+                                Users
+                                <span class="sidebar-badge">1,247</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="chatbots.html">
+                                <span class="sidebar-icon">🤖</span>
+                                Chatbots
+                                <span class="sidebar-badge">3,892</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#">
+                                <span class="sidebar-icon">💬</span>
+                                Conversations
+                                <span class="sidebar-badge">15.2K</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#">
+                                <span class="sidebar-icon">💳</span>
+                                Billing
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="sidebar-title">System</div>
+                    <ul class="sidebar-menu">
+                        <li>
+                            <a href="settings.html">
+                                <span class="sidebar-icon">⚙️</span>
+                                Settings
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#">
+                                <span class="sidebar-icon">🔐</span>
+                                Security
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#">
+                                <span class="sidebar-icon">📝</span>
+                                Logs
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#">
+                                <span class="sidebar-icon">🛠️</span>
+                                Maintenance
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </aside>
+
+            <!-- Content Area -->
+            <main class="admin-content">
+                <div class="page-header">
+                    <div>
+                        <h1 class="page-title">User Management</h1>
+                        <p class="page-subtitle">Manage and monitor user accounts across your platform</p>
+                    </div>
+                    <div class="page-actions">
+                        <button class="btn btn-secondary">Export Users</button>
+                        <button class="btn btn-primary">Add User</button>
+                    </div>
+                </div>
+
+                <!-- Stats Overview -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <span class="stat-title">Total Users</span>
+                            <span class="stat-icon">👥</span>
+                        </div>
+                        <div class="stat-value">1,247</div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <span class="stat-title">Active Users</span>
+                            <span class="stat-icon">✅</span>
+                        </div>
+                        <div class="stat-value">1,089</div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <span class="stat-title">Trial Users</span>
+                            <span class="stat-icon">🔄</span>
+                        </div>
+                        <div class="stat-value">98</div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <span class="stat-title">Suspended</span>
+                            <span class="stat-icon">⛔</span>
+                        </div>
+                        <div class="stat-value">12</div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <span class="stat-title">New This Month</span>
+                            <span class="stat-icon">📈</span>
+                        </div>
+                        <div class="stat-value">156</div>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="filters-section">
+                    <div class="filters-row">
+                        <div class="filter-group">
+                            <label class="filter-label">Search Users</label>
+                            <input type="text" class="filter-input" placeholder="Search by name, email, or company...">
+                        </div>
+                        <div class="filter-group">
+                            <label class="filter-label">Status</label>
+                            <select class="filter-select">
+                                <option value="">All Statuses</option>
+                                <option value="active">Active</option>
+                                <option value="trial">Trial</option>
+                                <option value="suspended">Suspended</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label class="filter-label">Plan</label>
+                            <select class="filter-select">
+                                <option value="">All Plans</option>
+                                <option value="starter">Starter</option>
+                                <option value="professional">Professional</option>
+                                <option value="enterprise">Enterprise</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <button class="btn btn-primary">Filter</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Users Table -->
+                <div class="users-table">
+                    <div class="table-header">
+                        <h3 class="table-title">All Users</h3>
+                        <div class="table-actions">
+                            <button class="btn btn-secondary btn-sm">Bulk Actions</button>
+                            <button class="btn btn-secondary btn-sm">Export Selected</button>
+                        </div>
+                    </div>
+                    
+                    <table>
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox"></th>
+                                <th>User</th>
+                                <th>Plan</th>
+                                <th>Status</th>
+                                <th>Chatbots</th>
+                                <th>Last Active</th>
+                                <th>Joined</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><input type="checkbox"></td>
+                                <td>
+                                    <div class="user-cell">
+                                        <div class="user-avatar" style="background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));">JD</div>
+                                        <div class="user-info">
+                                            <h4>John Doe</h4>
+                                            <p>john.doe@company.com</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="plan-badge plan-professional">Professional</span></td>
+                                <td><span class="status-badge status-active">Active</span></td>
+                                <td>3</td>
+                                <td>2 hours ago</td>
+                                <td>Jan 15, 2024</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn btn-secondary btn-sm">View</button>
+                                        <button class="btn btn-secondary btn-sm">Edit</button>
+                                        <button class="btn btn-danger btn-sm">Suspend</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox"></td>
+                                <td>
+                                    <div class="user-cell">
+                                        <div class="user-avatar" style="background: linear-gradient(135deg, var(--success-color), #059669);">SM</div>
+                                        <div class="user-info">
+                                            <h4>Sarah Miller</h4>
+                                            <p>sarah.m@startup.io</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="plan-badge plan-enterprise">Enterprise</span></td>
+                                <td><span class="status-badge status-active">Active</span></td>
+                                <td>12</td>
+                                <td>1 day ago</td>
+                                <td>Jan 14, 2024</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn btn-secondary btn-sm">View</button>
+                                        <button class="btn btn-secondary btn-sm">Edit</button>
+                                        <button class="btn btn-danger btn-sm">Suspend</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox"></td>
+                                <td>
+                                    <div class="user-cell">
+                                        <div class="user-avatar" style="background: linear-gradient(135deg, var(--warning-color), #d97706);">MW</div>
+                                        <div class="user-info">
+                                            <h4>Mike Wilson</h4>
+                                            <p>mike.w@techcorp.com</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="plan-badge plan-starter">Starter</span></td>
+                                <td><span class="status-badge status-trial">Trial</span></td>
+                                <td>1</td>
+                                <td>3 hours ago</td>
+                                <td>Jan 13, 2024</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn btn-secondary btn-sm">View</button>
+                                        <button class="btn btn-secondary btn-sm">Edit</button>
+                                        <button class="btn btn-danger btn-sm">Suspend</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox"></td>
+                                <td>
+                                    <div class="user-cell">
+                                        <div class="user-avatar" style="background: linear-gradient(135deg, var(--accent-color), #0891b2);">EB</div>
+                                        <div class="user-info">
+                                            <h4>Emily Brown</h4>
+                                            <p>emily.b@agency.com</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="plan-badge plan-professional">Professional</span></td>
+                                <td><span class="status-badge status-active">Active</span></td>
+                                <td>5</td>
+                                <td>1 hour ago</td>
+                                <td>Jan 12, 2024</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn btn-secondary btn-sm">View</button>
+                                        <button class="btn btn-secondary btn-sm">Edit</button>
+                                        <button class="btn btn-danger btn-sm">Suspend</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox"></td>
+                                <td>
+                                    <div class="user-cell">
+                                        <div class="user-avatar" style="background: linear-gradient(135deg, var(--error-color), #dc2626);">RJ</div>
+                                        <div class="user-info">
+                                            <h4>Robert Johnson</h4>
+                                            <p>r.johnson@enterprise.com</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="plan-badge plan-enterprise">Enterprise</span></td>
+                                <td><span class="status-badge status-suspended">Suspended</span></td>
+                                <td>8</td>
+                                <td>1 week ago</td>
+                                <td>Jan 11, 2024</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn btn-secondary btn-sm">View</button>
+                                        <button class="btn btn-secondary btn-sm">Edit</button>
+                                        <button class="btn btn-primary btn-sm">Reactivate</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox"></td>
+                                <td>
+                                    <div class="user-cell">
+                                        <div class="user-avatar" style="background: linear-gradient(135deg, #8b5cf6, #ec4899);">AL</div>
+                                        <div class="user-info">
+                                            <h4>Alice Liu</h4>
+                                            <p>alice.liu@marketing.co</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="plan-badge plan-professional">Professional</span></td>
+                                <td><span class="status-badge status-active">Active</span></td>
+                                <td>7</td>
+                                <td>5 hours ago</td>
+                                <td>Jan 10, 2024</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn btn-secondary btn-sm">View</button>
+                                        <button class="btn btn-secondary btn-sm">Edit</button>
+                                        <button class="btn btn-danger btn-sm">Suspend</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox"></td>
+                                <td>
+                                    <div class="user-cell">
+                                        <div class="user-avatar" style="background: linear-gradient(135deg, #06b6d4, #10b981);">DG</div>
+                                        <div class="user-info">
+                                            <h4>David Garcia</h4>
+                                            <p>d.garcia@solutions.net</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="plan-badge plan-starter">Starter</span></td>
+                                <td><span class="status-badge status-trial">Trial</span></td>
+                                <td>2</td>
+                                <td>1 day ago</td>
+                                <td>Jan 9, 2024</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn btn-secondary btn-sm">View</button>
+                                        <button class="btn btn-secondary btn-sm">Edit</button>
+                                        <button class="btn btn-danger btn-sm">Suspend</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox"></td>
+                                <td>
+                                    <div class="user-cell">
+                                        <div class="user-avatar" style="background: linear-gradient(135deg, #f59e0b, #ef4444);">CT</div>
+                                        <div class="user-info">
+                                            <h4>Carol Thompson</h4>
+                                            <p>carol.t@consulting.biz</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="plan-badge plan-enterprise">Enterprise</span></td>
+                                <td><span class="status-badge status-active">Active</span></td>
+                                <td>15</td>
+                                <td>30 min ago</td>
+                                <td>Jan 8, 2024</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn btn-secondary btn-sm">View</button>
+                                        <button class="btn btn-secondary btn-sm">Edit</button>
+                                        <button class="btn btn-danger btn-sm">Suspend</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="pagination">
+                        <div class="pagination-info">
+                            Showing 1-8 of 1,247 users
+                        </div>
+                        <div class="pagination-controls">
+                            <button class="pagination-btn">Previous</button>
+                            <button class="pagination-btn active">1</button>
+                            <button class="pagination-btn">2</button>
+                            <button class="pagination-btn">3</button>
+                            <button class="pagination-btn">...</button>
+                            <button class="pagination-btn">156</button>
+                            <button class="pagination-btn">Next</button>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Three.js setup for animated background
+        let scene, camera, renderer, particles, mouseX = 0, mouseY = 0;
+        
+        function initThreeJS() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+            
+            createParticleSystem();
+            
+            camera.position.z = 100;
+            animate();
+        }
+        
+        function createParticleSystem() {
+            const geometry = new THREE.BufferGeometry();
+            const particleCount = 800;
+            const positions = new Float32Array(particleCount * 3);
+            const velocities = new Float32Array(particleCount * 3);
+            const colors = new Float32Array(particleCount * 3);
+            
+            for (let i = 0; i < particleCount * 3; i += 3) {
+                positions[i] = (Math.random() - 0.5) * 300;
+                positions[i + 1] = (Math.random() - 0.5) * 300;
+                positions[i + 2] = (Math.random() - 0.5) * 300;
+                
+                velocities[i] = (Math.random() - 0.5) * 0.02;
+                velocities[i + 1] = (Math.random() - 0.5) * 0.02;
+                velocities[i + 2] = (Math.random() - 0.5) * 0.02;
+                
+                colors[i] = 0.39 * (Math.random() * 0.6 + 0.4);
+                colors[i + 1] = 0.4 * (Math.random() * 0.6 + 0.4);
+                colors[i + 2] = 0.94 * (Math.random() * 0.6 + 0.4);
+            }
+            
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('velocity', new THREE.BufferAttribute(velocities, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            
+            const material = new THREE.PointsMaterial({
+                size: 1.5,
+                transparent: true,
+                opacity: 0.3,
+                vertexColors: true,
+                blending: THREE.AdditiveBlending
+            });
+            
+            particles = new THREE.Points(geometry, material);
+            scene.add(particles);
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const targetX = mouseX * 0.0005;
+            const targetY = mouseY * 0.0005;
+            
+            if (particles) {
+                particles.rotation.x += (targetY - particles.rotation.x) * 0.02;
+                particles.rotation.y += (targetX - particles.rotation.y) * 0.02;
+                
+                const positions = particles.geometry.attributes.position.array;
+                const velocities = particles.geometry.attributes.velocity.array;
+                
+                for (let i = 0; i < positions.length; i += 3) {
+                    positions[i] += velocities[i];
+                    positions[i + 1] += velocities[i + 1];
+                    positions[i + 2] += velocities[i + 2];
+                    
+                    if (positions[i] > 150) positions[i] = -150;
+                    if (positions[i] < -150) positions[i] = 150;
+                    if (positions[i + 1] > 150) positions[i + 1] = -150;
+                    if (positions[i + 1] < -150) positions[i + 1] = 150;
+                    if (positions[i + 2] > 150) positions[i + 2] = -150;
+                    if (positions[i + 2] < -150) positions[i + 2] = 150;
+                }
+                
+                particles.geometry.attributes.position.needsUpdate = true;
+            }
+            
+            renderer.render(scene, camera);
+        }
+        
+        // Mouse tracking
+        document.addEventListener('mousemove', (event) => {
+            mouseX = event.clientX - window.innerWidth / 2;
+            mouseY = event.clientY - window.innerHeight / 2;
+        });
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Initialize
+        initThreeJS();
+    </script>
+</body>
+</html>

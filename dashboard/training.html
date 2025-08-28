@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Training Dashboard - ChatFlow AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #8b5cf6;
+            --accent: #06b6d4;
+            --background: #0a0a0a;
+            --surface: #111111;
+            --surface-light: #1a1a1a;
+            --text-primary: #ffffff;
+            --text-secondary: #a3a3a3;
+            --border: #2a2a2a;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --error: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--background);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .dashboard-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            padding: 2rem 0;
+            position: fixed;
+            height: 100vh;
+            width: 280px;
+            overflow-y: auto;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            padding: 0 2rem 2rem;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-menu {
+            list-style: none;
+        }
+
+        .nav-item {
+            margin-bottom: 0.25rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.875rem 2rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: all 0.3s;
+            font-size: 0.95rem;
+        }
+
+        .nav-link:hover {
+            background: var(--surface-light);
+            color: var(--text-primary);
+        }
+
+        .nav-link.active {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 280px;
+            padding: 2rem;
+        }
+
+        .header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            margin-left: auto;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.95rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--surface);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--surface-light);
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .stat-change {
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+
+        .stat-change.positive {
+            color: var(--success);
+        }
+
+        .stat-change.negative {
+            color: var(--error);
+        }
+
+        /* Upload Section */
+        .upload-section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+
+        .section-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .upload-area {
+            padding: 2rem;
+        }
+
+        .dropzone {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 3rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: var(--background);
+        }
+
+        .dropzone:hover,
+        .dropzone.dragover {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        .dropzone-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: var(--text-secondary);
+        }
+
+        .dropzone-text {
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        /* Training Jobs */
+        .jobs-section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+
+        .jobs-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .jobs-table th,
+        .jobs-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .jobs-table th {
+            background: var(--surface-light);
+            color: var(--text-secondary);
+            font-weight: 500;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .jobs-table td {
+            color: var(--text-primary);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .status-badge.queued {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .status-badge.processing {
+            background: rgba(99, 102, 241, 0.2);
+            color: var(--primary);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+        }
+
+        .status-badge.completed {
+            background: rgba(34, 197, 94, 0.2);
+            color: var(--success);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .status-badge.failed {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--error);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            transition: width 0.3s;
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .form-input,
+        .form-select {
+            width: 100%;
+            padding: 0.875rem;
+            background: var(--background);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+
+        .form-input:focus,
+        .form-select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .modal.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+        }
+
+        /* Loading Animation */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .dashboard-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                display: none;
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-layout">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="logo">ChatFlow AI</div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="../dashboard.html" class="nav-link">
+                        <span>📊</span> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="training.html" class="nav-link active">
+                        <span>🧠</span> Training
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="chatbots.html" class="nav-link">
+                        <span>🤖</span> Chatbots
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="analytics.html" class="nav-link">
+                        <span>📈</span> Analytics
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="../user/profile.html" class="nav-link">
+                        <span>👤</span> Profile
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <div class="header">
+                <h1>Training Dashboard</h1>
+                <div class="header-actions">
+                    <button class="btn btn-secondary" onclick="refreshData()">
+                        <span id="refresh-icon">🔄</span> Refresh
+                    </button>
+                    <button class="btn btn-primary" onclick="openUploadModal()">
+                        📤 Upload Data
+                    </button>
+                </div>
+            </div>
+
+            <!-- Statistics -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="total-jobs">24</div>
+                    <div class="stat-label">Training Jobs</div>
+                    <div class="stat-change positive">+3 this week</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="total-data">1.2K</div>
+                    <div class="stat-label">Training Items</div>
+                    <div class="stat-change positive">+156 this week</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="success-rate">94%</div>
+                    <div class="stat-label">Success Rate</div>
+                    <div class="stat-change positive">+2% this month</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="avg-accuracy">0.89</div>
+                    <div class="stat-label">Avg Accuracy</div>
+                    <div class="stat-change positive">+0.03 this month</div>
+                </div>
+            </div>
+
+            <!-- Upload Section -->
+            <div class="upload-section">
+                <div class="section-header">
+                    <h2 class="section-title">Quick Upload</h2>
+                    <select id="chatbot-select" class="form-select" style="width: 200px;">
+                        <option value="">Select Chatbot</option>
+                        <option value="chatbot-1">Customer Support Bot</option>
+                        <option value="chatbot-2">Sales Assistant</option>
+                        <option value="chatbot-3">FAQ Bot</option>
+                    </select>
+                </div>
+                <div class="upload-area">
+                    <div class="dropzone" id="dropzone">
+                        <div class="dropzone-icon">📁</div>
+                        <div class="dropzone-text">
+                            <strong>Drag and drop files here</strong> or click to browse
+                        </div>
+                        <p style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                            Supports PDF, CSV, JSON, DOCX files up to 10MB
+                        </p>
+                    </div>
+                    <input type="file" id="file-input" class="file-input" multiple accept=".pdf,.csv,.json,.docx,.txt">
+                </div>
+            </div>
+
+            <!-- Training Jobs -->
+            <div class="jobs-section">
+                <div class="section-header">
+                    <h2 class="section-title">Training Jobs</h2>
+                    <button class="btn btn-secondary" onclick="startTraining()">
+                        ⚡ Start Training
+                    </button>
+                </div>
+                <table class="jobs-table">
+                    <thead>
+                        <tr>
+                            <th>Job ID</th>
+                            <th>Chatbot</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>Progress</th>
+                            <th>Started</th>
+                            <th>Duration</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="jobs-tbody">
+                        <tr>
+                            <td><code>train-001</code></td>
+                            <td>Customer Support Bot</td>
+                            <td>Initial Training</td>
+                            <td><span class="status-badge processing">Processing</span></td>
+                            <td>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 65%"></div>
+                                </div>
+                                <small>65%</small>
+                            </td>
+                            <td>2 hours ago</td>
+                            <td>~15 min left</td>
+                            <td>
+                                <button class="btn btn-secondary" style="padding: 0.5rem;">View</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><code>train-002</code></td>
+                            <td>Sales Assistant</td>
+                            <td>Incremental</td>
+                            <td><span class="status-badge completed">Completed</span></td>
+                            <td>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 100%"></div>
+                                </div>
+                                <small>100%</small>
+                            </td>
+                            <td>3 hours ago</td>
+                            <td>18 min</td>
+                            <td>
+                                <button class="btn btn-secondary" style="padding: 0.5rem;">View</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><code>train-003</code></td>
+                            <td>FAQ Bot</td>
+                            <td>Retraining</td>
+                            <td><span class="status-badge queued">Queued</span></td>
+                            <td>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 0%"></div>
+                                </div>
+                                <small>0%</small>
+                            </td>
+                            <td>1 hour ago</td>
+                            <td>-</td>
+                            <td>
+                                <button class="btn btn-secondary" style="padding: 0.5rem;">Cancel</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <!-- Upload Modal -->
+    <div class="modal" id="upload-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Upload Training Data</h2>
+                <button class="close-btn" onclick="closeUploadModal()">&times;</button>
+            </div>
+            <form id="upload-form">
+                <div class="form-group">
+                    <label class="form-label">Chatbot</label>
+                    <select class="form-select" name="chatbot_id" required>
+                        <option value="">Select a chatbot</option>
+                        <option value="chatbot-1">Customer Support Bot</option>
+                        <option value="chatbot-2">Sales Assistant</option>
+                        <option value="chatbot-3">FAQ Bot</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Content Type</label>
+                    <select class="form-select" name="content_type" required>
+                        <option value="">Select content type</option>
+                        <option value="faq">FAQ / Q&A</option>
+                        <option value="conversation">Conversations</option>
+                        <option value="document">Documents</option>
+                        <option value="knowledge_base">Knowledge Base</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Title (Optional)</label>
+                    <input type="text" class="form-input" name="title" placeholder="Training data title">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Category (Optional)</label>
+                    <input type="text" class="form-input" name="category" placeholder="e.g., Support, Sales">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Tags (Optional)</label>
+                    <input type="text" class="form-input" name="tags" placeholder="Comma-separated tags">
+                </div>
+                <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+                    <button type="button" class="btn btn-secondary" onclick="closeUploadModal()">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <span id="upload-btn-text">Upload</span>
+                        <span id="upload-spinner" class="loading-spinner" style="display: none; margin-left: 0.5rem;"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // File upload functionality
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('file-input');
+        let selectedFiles = [];
+
+        // Drag and drop handlers
+        dropzone.addEventListener('click', () => fileInput.click());
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('dragover');
+        });
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('dragover');
+        });
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+
+        function handleFiles(files) {
+            selectedFiles = Array.from(files);
+            updateDropzoneText();
+            
+            // Auto-upload if chatbot is selected
+            const chatbotSelect = document.getElementById('chatbot-select');
+            if (chatbotSelect.value) {
+                uploadFiles();
+            }
+        }
+
+        function updateDropzoneText() {
+            if (selectedFiles.length > 0) {
+                dropzone.innerHTML = `
+                    <div class="dropzone-icon">✅</div>
+                    <div class="dropzone-text">
+                        <strong>${selectedFiles.length} file(s) selected</strong>
+                    </div>
+                    <p style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                        ${selectedFiles.map(f => f.name).join(', ')}
+                    </p>
+                `;
+            }
+        }
+
+        async function uploadFiles() {
+            if (!selectedFiles.length) return;
+            
+            const chatbotId = document.getElementById('chatbot-select').value;
+            if (!chatbotId) {
+                alert('Please select a chatbot first');
+                return;
+            }
+
+            for (const file of selectedFiles) {
+                await uploadSingleFile(file, chatbotId);
+            }
+
+            // Reset
+            selectedFiles = [];
+            fileInput.value = '';
+            dropzone.innerHTML = `
+                <div class="dropzone-icon">📁</div>
+                <div class="dropzone-text">
+                    <strong>Drag and drop files here</strong> or click to browse
+                </div>
+                <p style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                    Supports PDF, CSV, JSON, DOCX files up to 10MB
+                </p>
+            `;
+
+            refreshData();
+        }
+
+        async function uploadSingleFile(file, chatbotId) {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('chatbot_id', chatbotId);
+            formData.append('user_id', 'current-user'); // Should come from auth
+            formData.append('content_type', 'document'); // Default
+
+            try {
+                const response = await fetch('/api/upload-training-data', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('apiKey')
+                    }
+                });
+
+                const result = await response.json();
+                console.log('Upload result:', result);
+                
+                // Show success notification
+                showNotification(`File "${file.name}" uploaded successfully`, 'success');
+                
+            } catch (error) {
+                console.error('Upload error:', error);
+                showNotification(`Failed to upload "${file.name}"`, 'error');
+            }
+        }
+
+        // Modal functions
+        function openUploadModal() {
+            document.getElementById('upload-modal').classList.add('open');
+        }
+
+        function closeUploadModal() {
+            document.getElementById('upload-modal').classList.remove('open');
+            document.getElementById('upload-form').reset();
+        }
+
+        // Upload form submission
+        document.getElementById('upload-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!selectedFiles.length) {
+                alert('Please select files to upload');
+                return;
+            }
+
+            const formData = new FormData(e.target);
+            const uploadBtn = document.getElementById('upload-btn-text');
+            const uploadSpinner = document.getElementById('upload-spinner');
+
+            uploadBtn.style.display = 'none';
+            uploadSpinner.style.display = 'inline-block';
+
+            try {
+                for (const file of selectedFiles) {
+                    const fileFormData = new FormData();
+                    fileFormData.append('file', file);
+                    fileFormData.append('chatbot_id', formData.get('chatbot_id'));
+                    fileFormData.append('user_id', 'current-user');
+                    fileFormData.append('content_type', formData.get('content_type'));
+                    fileFormData.append('title', formData.get('title') || file.name);
+                    fileFormData.append('category', formData.get('category') || '');
+                    fileFormData.append('tags', formData.get('tags') || '');
+
+                    await fetch('/api/upload-training-data', {
+                        method: 'POST',
+                        body: fileFormData,
+                        headers: {
+                            'Authorization': 'Bearer ' + localStorage.getItem('apiKey')
+                        }
+                    });
+                }
+
+                showNotification('Files uploaded successfully!', 'success');
+                closeUploadModal();
+                refreshData();
+
+            } catch (error) {
+                console.error('Upload error:', error);
+                showNotification('Upload failed. Please try again.', 'error');
+            } finally {
+                uploadBtn.style.display = 'inline-block';
+                uploadSpinner.style.display = 'none';
+            }
+        });
+
+        // Start training function
+        async function startTraining() {
+            const chatbotId = document.getElementById('chatbot-select').value;
+            if (!chatbotId) {
+                alert('Please select a chatbot');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/training/start', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('apiKey')
+                    },
+                    body: JSON.stringify({
+                        chatbot_id: chatbotId,
+                        job_type: 'initial_training',
+                        config: {
+                            batch_size: 16,
+                            num_epochs: 3,
+                            learning_rate: 2e-5
+                        }
+                    })
+                });
+
+                const result = await response.json();
+                console.log('Training started:', result);
+                
+                showNotification('Training job started successfully!', 'success');
+                refreshData();
+
+            } catch (error) {
+                console.error('Training error:', error);
+                showNotification('Failed to start training job', 'error');
+            }
+        }
+
+        // Refresh data
+        function refreshData() {
+            const refreshIcon = document.getElementById('refresh-icon');
+            refreshIcon.style.transform = 'rotate(360deg)';
+            refreshIcon.style.transition = 'transform 0.5s';
+            
+            // Simulate data refresh
+            setTimeout(() => {
+                refreshIcon.style.transform = 'rotate(0deg)';
+                // Here you would actually fetch fresh data from your API
+                loadTrainingJobs();
+                loadStatistics();
+            }, 500);
+        }
+
+        // Load training jobs
+        async function loadTrainingJobs() {
+            try {
+                // This would be your actual API call
+                console.log('Loading training jobs...');
+                // Update the jobs table with fresh data
+            } catch (error) {
+                console.error('Error loading jobs:', error);
+            }
+        }
+
+        // Load statistics
+        async function loadStatistics() {
+            try {
+                // This would be your actual API call
+                console.log('Loading statistics...');
+                // Update the stats cards with fresh data
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        // Notification system
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 1rem 1.5rem;
+                border-radius: 8px;
+                color: white;
+                font-weight: 500;
+                z-index: 2000;
+                transform: translateX(100%);
+                transition: transform 0.3s;
+                ${type === 'success' ? 'background: var(--success);' : ''}
+                ${type === 'error' ? 'background: var(--error);' : ''}
+                ${type === 'info' ? 'background: var(--primary);' : ''}
+            `;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.transform = 'translateX(0)';
+            }, 100);
+            
+            setTimeout(() => {
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+
+        // Auto-refresh training jobs every 30 seconds
+        setInterval(() => {
+            const processingJobs = document.querySelectorAll('.status-badge.processing').length;
+            if (processingJobs > 0) {
+                loadTrainingJobs();
+            }
+        }, 30000);
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTrainingJobs();
+            loadStatistics();
+        });
+    </script>
+</body>
+</html>

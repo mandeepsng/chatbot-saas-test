@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics Dashboard - ChatFlow AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.0/index.min.js"></script>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #8b5cf6;
+            --accent: #06b6d4;
+            --background: #0a0a0a;
+            --surface: #111111;
+            --surface-light: #1a1a1a;
+            --text-primary: #ffffff;
+            --text-secondary: #a3a3a3;
+            --border: #2a2a2a;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --error: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--background);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .dashboard-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            padding: 2rem 0;
+            position: fixed;
+            height: 100vh;
+            width: 280px;
+            overflow-y: auto;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            padding: 0 2rem 2rem;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-menu {
+            list-style: none;
+        }
+
+        .nav-item {
+            margin-bottom: 0.25rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.875rem 2rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: all 0.3s;
+            font-size: 0.95rem;
+        }
+
+        .nav-link:hover {
+            background: var(--surface-light);
+            color: var(--text-primary);
+        }
+
+        .nav-link.active {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 280px;
+            padding: 2rem;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .time-filter {
+            display: flex;
+            gap: 0.5rem;
+            background: var(--surface);
+            padding: 0.25rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .time-filter button {
+            padding: 0.5rem 1rem;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.875rem;
+        }
+
+        .time-filter button:hover,
+        .time-filter button.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .stat-trend {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.875rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+        }
+
+        .stat-trend.positive {
+            background: rgba(34, 197, 94, 0.2);
+            color: var(--success);
+        }
+
+        .stat-trend.negative {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--error);
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+        }
+
+        .stat-details {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        /* Chart Containers */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-container {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .chart-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .chart-options {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .chart-option {
+            padding: 0.25rem 0.5rem;
+            background: var(--background);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.3s;
+        }
+
+        .chart-option:hover,
+        .chart-option.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .chart-canvas {
+            width: 100%;
+            height: 300px;
+        }
+
+        /* Analytics Tables */
+        .analytics-section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+
+        .section-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .analytics-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .analytics-table th,
+        .analytics-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .analytics-table th {
+            background: var(--surface-light);
+            color: var(--text-secondary);
+            font-weight: 500;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .analytics-table td {
+            color: var(--text-primary);
+        }
+
+        .table-metric {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .table-trend {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.875rem;
+        }
+
+        .table-trend.positive {
+            color: var(--success);
+        }
+
+        .table-trend.negative {
+            color: var(--error);
+        }
+
+        /* Performance Insights */
+        .insights-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .insight-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .insight-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .insight-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--accent);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .insight-title {
+            font-weight: 600;
+        }
+
+        .insight-description {
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            line-height: 1.6;
+        }
+
+        .insight-action {
+            padding: 0.5rem 1rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.3s;
+        }
+
+        .insight-action:hover {
+            background: var(--primary-dark);
+        }
+
+        /* Loading States */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            color: var(--text-secondary);
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border);
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .dashboard-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                display: none;
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .insights-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-layout">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="logo">ChatFlow AI</div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="../dashboard.html" class="nav-link">
+                        <span>📊</span> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="training.html" class="nav-link">
+                        <span>🧠</span> Training
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="search-test.html" class="nav-link">
+                        <span>🔍</span> Search Test
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="analytics.html" class="nav-link active">
+                        <span>📈</span> Analytics
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="chat-demo.html" class="nav-link">
+                        <span>💬</span> Chat Demo
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="../user/profile.html" class="nav-link">
+                        <span>👤</span> Profile
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <div class="header">
+                <h1>Analytics Dashboard</h1>
+                <div class="time-filter">
+                    <button class="active" data-period="7d">7 Days</button>
+                    <button data-period="30d">30 Days</button>
+                    <button data-period="90d">90 Days</button>
+                    <button data-period="1y">1 Year</button>
+                </div>
+            </div>
+
+            <!-- Key Metrics -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon">🔍</div>
+                        <div class="stat-trend positive">
+                            <span>↗</span> +12%
+                        </div>
+                    </div>
+                    <div class="stat-value" id="total-searches">24.5K</div>
+                    <div class="stat-label">Total Searches</div>
+                    <div class="stat-details">2,847 searches today</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon">⚡</div>
+                        <div class="stat-trend positive">
+                            <span>↗</span> +8%
+                        </div>
+                    </div>
+                    <div class="stat-value" id="avg-response-time">156ms</div>
+                    <div class="stat-label">Avg Response Time</div>
+                    <div class="stat-details">15ms faster than last week</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon">🎯</div>
+                        <div class="stat-trend positive">
+                            <span>↗</span> +5%
+                        </div>
+                    </div>
+                    <div class="stat-value" id="accuracy-score">0.89</div>
+                    <div class="stat-label">Avg Accuracy Score</div>
+                    <div class="stat-details">89% similarity match rate</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon">🚀</div>
+                        <div class="stat-trend positive">
+                            <span>↗</span> +18%
+                        </div>
+                    </div>
+                    <div class="stat-value" id="cache-hit-rate">94%</div>
+                    <div class="stat-label">Cache Hit Rate</div>
+                    <div class="stat-details">Excellent performance</div>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <h3 class="chart-title">Search Volume Trends</h3>
+                        <div class="chart-options">
+                            <button class="chart-option active" data-metric="searches">Searches</button>
+                            <button class="chart-option" data-metric="response-time">Response Time</button>
+                            <button class="chart-option" data-metric="accuracy">Accuracy</button>
+                        </div>
+                    </div>
+                    <canvas id="search-trends-chart" class="chart-canvas"></canvas>
+                </div>
+
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <h3 class="chart-title">Content Type Distribution</h3>
+                    </div>
+                    <canvas id="content-type-chart" class="chart-canvas"></canvas>
+                </div>
+            </div>
+
+            <!-- Performance Insights -->
+            <div class="insights-grid">
+                <div class="insight-card">
+                    <div class="insight-header">
+                        <div class="insight-icon">💡</div>
+                        <div class="insight-title">Optimization Opportunity</div>
+                    </div>
+                    <div class="insight-description">
+                        Your FAQ searches show 23% lower accuracy. Consider adding more diverse training data to improve responses.
+                    </div>
+                    <button class="insight-action">Upload FAQ Data</button>
+                </div>
+
+                <div class="insight-card">
+                    <div class="insight-header">
+                        <div class="insight-icon">⚡</div>
+                        <div class="insight-title">Performance Alert</div>
+                    </div>
+                    <div class="insight-description">
+                        Response times have increased 15% during peak hours (2-4 PM). Consider scaling resources or enabling caching.
+                    </div>
+                    <button class="insight-action">Optimize Performance</button>
+                </div>
+
+                <div class="insight-card">
+                    <div class="insight-header">
+                        <div class="insight-icon">🎯</div>
+                        <div class="insight-title">Training Success</div>
+                    </div>
+                    <div class="insight-description">
+                        Your latest model training improved accuracy by 8%. The new embeddings are performing excellently.
+                    </div>
+                    <button class="insight-action">View Details</button>
+                </div>
+            </div>
+
+            <!-- Top Queries Analysis -->
+            <div class="analytics-section">
+                <div class="section-header">
+                    <h3 class="section-title">Top Search Queries</h3>
+                    <button class="insight-action">Export Data</button>
+                </div>
+                <table class="analytics-table">
+                    <thead>
+                        <tr>
+                            <th>Query</th>
+                            <th>Frequency</th>
+                            <th>Avg Similarity</th>
+                            <th>Response Time</th>
+                            <th>Trend</th>
+                        </tr>
+                    </thead>
+                    <tbody id="top-queries-table">
+                        <tr>
+                            <td>How do I reset my password?</td>
+                            <td><span class="table-metric">1,247</span></td>
+                            <td><span class="table-metric">0.95</span></td>
+                            <td><span class="table-metric">142ms</span></td>
+                            <td><span class="table-trend positive">↗ +5%</span></td>
+                        </tr>
+                        <tr>
+                            <td>What are your business hours?</td>
+                            <td><span class="table-metric">892</span></td>
+                            <td><span class="table-metric">0.91</span></td>
+                            <td><span class="table-metric">156ms</span></td>
+                            <td><span class="table-trend positive">↗ +12%</span></td>
+                        </tr>
+                        <tr>
+                            <td>How to cancel subscription?</td>
+                            <td><span class="table-metric">634</span></td>
+                            <td><span class="table-metric">0.88</span></td>
+                            <td><span class="table-metric">189ms</span></td>
+                            <td><span class="table-trend negative">↘ -3%</span></td>
+                        </tr>
+                        <tr>
+                            <td>API documentation</td>
+                            <td><span class="table-metric">521</span></td>
+                            <td><span class="table-metric">0.92</span></td>
+                            <td><span class="table-metric">134ms</span></td>
+                            <td><span class="table-trend positive">↗ +18%</span></td>
+                        </tr>
+                        <tr>
+                            <td>Pricing information</td>
+                            <td><span class="table-metric">456</span></td>
+                            <td><span class="table-metric">0.94</span></td>
+                            <td><span class="table-metric">128ms</span></td>
+                            <td><span class="table-trend positive">↗ +7%</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Low Performance Queries -->
+            <div class="analytics-section">
+                <div class="section-header">
+                    <h3 class="section-title">Queries Needing Attention</h3>
+                    <button class="insight-action">Improve Training</button>
+                </div>
+                <table class="analytics-table">
+                    <thead>
+                        <tr>
+                            <th>Query</th>
+                            <th>Frequency</th>
+                            <th>Avg Similarity</th>
+                            <th>Issue</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Advanced API features</td>
+                            <td><span class="table-metric">234</span></td>
+                            <td><span class="table-metric" style="color: var(--warning);">0.67</span></td>
+                            <td>Low similarity scores</td>
+                            <td><button class="insight-action" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">Add Training Data</button></td>
+                        </tr>
+                        <tr>
+                            <td>Enterprise deployment</td>
+                            <td><span class="table-metric">189</span></td>
+                            <td><span class="table-metric" style="color: var(--error);">0.59</span></td>
+                            <td>No relevant matches</td>
+                            <td><button class="insight-action" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">Create Content</button></td>
+                        </tr>
+                        <tr>
+                            <td>Custom integrations</td>
+                            <td><span class="table-metric">156</span></td>
+                            <td><span class="table-metric" style="color: var(--warning);">0.71</span></td>
+                            <td>Outdated responses</td>
+                            <td><button class="insight-action" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">Update Content</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Chart.js configuration with dark theme
+        Chart.defaults.color = '#a3a3a3';
+        Chart.defaults.borderColor = '#2a2a2a';
+
+        // Initialize charts
+        let searchTrendsChart, contentTypeChart;
+
+        // Sample data
+        const searchTrendsData = {
+            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            datasets: [{
+                label: 'Searches',
+                data: [3200, 3800, 4200, 3900, 4500, 2800, 2400],
+                borderColor: '#6366f1',
+                backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4
+            }]
+        };
+
+        const responseTimeData = {
+            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            datasets: [{
+                label: 'Response Time (ms)',
+                data: [145, 152, 148, 156, 162, 149, 143],
+                borderColor: '#06b6d4',
+                backgroundColor: 'rgba(6, 182, 212, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4
+            }]
+        };
+
+        const accuracyData = {
+            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            datasets: [{
+                label: 'Accuracy Score',
+                data: [0.87, 0.89, 0.91, 0.88, 0.92, 0.90, 0.89],
+                borderColor: '#22c55e',
+                backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4
+            }]
+        };
+
+        const contentTypeData = {
+            labels: ['FAQ', 'Documents', 'Conversations', 'Knowledge Base'],
+            datasets: [{
+                data: [35, 28, 22, 15],
+                backgroundColor: [
+                    '#6366f1',
+                    '#8b5cf6',
+                    '#06b6d4',
+                    '#22c55e'
+                ],
+                borderWidth: 0
+            }]
+        };
+
+        // Initialize search trends chart
+        function initSearchTrendsChart() {
+            const ctx = document.getElementById('search-trends-chart').getContext('2d');
+            searchTrendsChart = new Chart(ctx, {
+                type: 'line',
+                data: searchTrendsData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: '#2a2a2a'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    elements: {
+                        point: {
+                            radius: 6,
+                            hoverRadius: 8
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize content type chart
+        function initContentTypeChart() {
+            const ctx = document.getElementById('content-type-chart').getContext('2d');
+            contentTypeChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: contentTypeData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Chart metric switcher
+        document.querySelectorAll('.chart-option').forEach(button => {
+            button.addEventListener('click', () => {
+                // Update active button
+                document.querySelectorAll('.chart-option').forEach(b => b.classList.remove('active'));
+                button.classList.add('active');
+
+                // Update chart data
+                const metric = button.dataset.metric;
+                let newData;
+                
+                switch(metric) {
+                    case 'searches':
+                        newData = searchTrendsData;
+                        break;
+                    case 'response-time':
+                        newData = responseTimeData;
+                        break;
+                    case 'accuracy':
+                        newData = accuracyData;
+                        break;
+                }
+
+                searchTrendsChart.data = newData;
+                searchTrendsChart.update('active');
+            });
+        });
+
+        // Time period filter
+        document.querySelectorAll('.time-filter button').forEach(button => {
+            button.addEventListener('click', () => {
+                document.querySelectorAll('.time-filter button').forEach(b => b.classList.remove('active'));
+                button.classList.add('active');
+                
+                const period = button.dataset.period;
+                refreshDashboard(period);
+            });
+        });
+
+        // Refresh dashboard with new time period
+        async function refreshDashboard(period) {
+            // Show loading state
+            showLoading();
+            
+            try {
+                // Simulate API call
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Update metrics based on period
+                updateMetrics(period);
+                
+                // Update charts
+                updateCharts(period);
+                
+            } catch (error) {
+                console.error('Failed to refresh dashboard:', error);
+                showError('Failed to refresh dashboard data');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function updateMetrics(period) {
+            // Simulate different values for different periods
+            const metrics = {
+                '7d': {
+                    totalSearches: '24.5K',
+                    responseTime: '156ms',
+                    accuracy: '0.89',
+                    cacheHit: '94%'
+                },
+                '30d': {
+                    totalSearches: '98.2K',
+                    responseTime: '162ms',
+                    accuracy: '0.91',
+                    cacheHit: '92%'
+                },
+                '90d': {
+                    totalSearches: '287K',
+                    responseTime: '158ms',
+                    accuracy: '0.88',
+                    cacheHit: '95%'
+                },
+                '1y': {
+                    totalSearches: '1.2M',
+                    responseTime: '164ms',
+                    accuracy: '0.87',
+                    cacheHit: '93%'
+                }
+            };
+
+            const data = metrics[period];
+            if (data) {
+                document.getElementById('total-searches').textContent = data.totalSearches;
+                document.getElementById('avg-response-time').textContent = data.responseTime;
+                document.getElementById('accuracy-score').textContent = data.accuracy;
+                document.getElementById('cache-hit-rate').textContent = data.cacheHit;
+            }
+        }
+
+        function updateCharts(period) {
+            // Update search trends chart with new data
+            // This would typically come from an API
+            const newLabels = period === '7d' ? 
+                ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] :
+                period === '30d' ? 
+                ['Week 1', 'Week 2', 'Week 3', 'Week 4'] :
+                ['Month 1', 'Month 2', 'Month 3'];
+            
+            searchTrendsChart.data.labels = newLabels;
+            searchTrendsChart.update();
+        }
+
+        function showLoading() {
+            // Add loading spinner to charts
+            document.querySelectorAll('.chart-canvas').forEach(canvas => {
+                canvas.style.opacity = '0.5';
+            });
+        }
+
+        function hideLoading() {
+            document.querySelectorAll('.chart-canvas').forEach(canvas => {
+                canvas.style.opacity = '1';
+            });
+        }
+
+        function showError(message) {
+            // Show error notification
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: var(--error);
+                color: white;
+                padding: 1rem;
+                border-radius: 8px;
+                z-index: 1000;
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Export functionality
+        function exportAnalyticsData() {
+            const data = {
+                period: document.querySelector('.time-filter button.active').dataset.period,
+                metrics: {
+                    totalSearches: document.getElementById('total-searches').textContent,
+                    responseTime: document.getElementById('avg-response-time').textContent,
+                    accuracy: document.getElementById('accuracy-score').textContent,
+                    cacheHit: document.getElementById('cache-hit-rate').textContent
+                },
+                timestamp: new Date().toISOString()
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `analytics-${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Add export functionality to buttons
+        document.querySelectorAll('.insight-action').forEach(button => {
+            if (button.textContent === 'Export Data') {
+                button.addEventListener('click', exportAnalyticsData);
+            }
+        });
+
+        // Auto-refresh dashboard every 5 minutes
+        setInterval(() => {
+            const activePeriod = document.querySelector('.time-filter button.active').dataset.period;
+            refreshDashboard(activePeriod);
+        }, 5 * 60 * 1000);
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', () => {
+            initSearchTrendsChart();
+            initContentTypeChart();
+            
+            // Simulate real-time updates
+            setTimeout(() => {
+                updateMetrics('7d');
+            }, 1000);
+        });
+
+        // Real-time counter animation
+        function animateCounters() {
+            const counters = document.querySelectorAll('.stat-value');
+            counters.forEach(counter => {
+                const targetText = counter.textContent;
+                if (targetText.includes('K') || targetText.includes('M')) {
+                    // Animate numeric counters
+                    const targetValue = parseFloat(targetText.replace(/[KM]/g, ''));
+                    const suffix = targetText.includes('K') ? 'K' : 'M';
+                    const increment = targetValue / 50;
+                    let currentValue = 0;
+                    
+                    const timer = setInterval(() => {
+                        currentValue += increment;
+                        if (currentValue >= targetValue) {
+                            currentValue = targetValue;
+                            clearInterval(timer);
+                        }
+                        counter.textContent = currentValue.toFixed(1) + suffix;
+                    }, 30);
+                }
+            });
+        }
+
+        // Start counter animation on load
+        setTimeout(animateCounters, 500);
+    </script>
+</body>
+</html>

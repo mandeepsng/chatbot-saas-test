@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatFlow AI - Authentication</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary-color: #6366f1;
+            --secondary-color: #8b5cf6;
+            --accent-color: #06b6d4;
+            --text-primary: #ffffff;
+            --text-secondary: #e2e8f0;
+            --text-muted: #94a3b8;
+            --bg-primary: #0f172a;
+            --bg-secondary: rgba(15, 23, 42, 0.8);
+            --border-color: rgba(99, 102, 241, 0.2);
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --error-color: #ef4444;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        
+        .content-overlay {
+            position: relative;
+            z-index: 2;
+            background: rgba(15, 23, 42, 0.1);
+            min-height: 100vh;
+        }
+        
+        /* Color Customization Panel */
+        .color-panel {
+            position: fixed;
+            top: 50%;
+            left: -280px;
+            transform: translateY(-50%);
+            width: 280px;
+            background: rgba(15, 23, 42, 0.98);
+            border: 1px solid var(--primary-color);
+            border-radius: 0 20px 20px 0;
+            padding: 2rem;
+            z-index: 1001;
+            transition: left 0.3s ease;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        .color-panel.open {
+            left: 0;
+        }
+        
+        .color-panel-toggle {
+            position: absolute;
+            right: -50px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 50px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border: none;
+            border-radius: 0 15px 15px 0;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .color-panel-toggle:hover {
+            transform: translateY(-50%) scale(1.1);
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
+        }
+        
+        .color-panel h3 {
+            color: var(--primary-color);
+            font-size: 1.3rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            font-weight: 700;
+        }
+        
+        .color-scheme {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 1rem;
+            border: 2px solid transparent;
+        }
+        
+        .color-scheme:hover {
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateX(5px);
+        }
+        
+        .color-scheme.active {
+            border-color: var(--primary-color);
+            background: rgba(99, 102, 241, 0.1);
+        }
+        
+        .color-preview {
+            display: flex;
+            gap: 4px;
+        }
+        
+        .color-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .scheme-name {
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+        
+        .reset-btn {
+            width: 100%;
+            background: transparent;
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
+            padding: 0.75rem;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+        }
+        
+        .reset-btn:hover {
+            background: var(--primary-color);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        /* Navigation */
+        .auth-nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 1rem 2rem;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+            z-index: 100;
+        }
+        
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            text-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+            text-decoration: none;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+        
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-links a:hover {
+            color: var(--primary-color);
+        }
+
+        /* Auth Container */
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            padding-top: 6rem;
+        }
+        
+        .auth-card {
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid var(--border-color);
+            border-radius: 25px;
+            padding: 3rem;
+            width: 100%;
+            max-width: 450px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 30px 80px rgba(99, 102, 241, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .auth-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), transparent);
+            pointer-events: none;
+        }
+        
+        .auth-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .auth-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            font-size: 2rem;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .auth-title {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--text-primary), var(--primary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .auth-subtitle {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+
+        /* Form Styles */
+        .auth-form {
+            position: relative;
+            z-index: 2;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-label {
+            display: block;
+            color: var(--text-secondary);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+            background: rgba(255, 255, 255, 0.08);
+        }
+        
+        .form-input::placeholder {
+            color: var(--text-muted);
+        }
+        
+        .password-input-container {
+            position: relative;
+        }
+        
+        .password-toggle {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+        }
+        
+        .password-toggle:hover {
+            color: var(--primary-color);
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .checkbox {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary-color);
+        }
+        
+        .checkbox-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+        
+        .checkbox-label a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+        
+        .checkbox-label a:hover {
+            text-decoration: underline;
+        }
+
+        /* Buttons */
+        .btn-primary {
+            width: 100%;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: #fff;
+            padding: 1.2rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+        }
+        
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .btn-primary:hover::before {
+            left: 100%;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(99, 102, 241, 0.4);
+        }
+        
+        .btn-secondary {
+            width: 100%;
+            background: transparent;
+            color: var(--text-primary);
+            padding: 1.2rem;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+        }
+        
+        .btn-secondary:hover {
+            border-color: var(--primary-color);
+            background: rgba(99, 102, 241, 0.1);
+            transform: translateY(-2px);
+        }
+
+        /* Social Login */
+        .social-login {
+            margin-bottom: 2rem;
+        }
+        
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 2rem 0;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .divider span {
+            padding: 0 1rem;
+        }
+
+        /* Auth Links */
+        .auth-links {
+            text-align: center;
+            margin-top: 2rem;
+        }
+        
+        .auth-links a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .auth-links a:hover {
+            text-decoration: underline;
+            color: var(--secondary-color);
+        }
+        
+        .forgot-password {
+            text-align: right;
+            margin-bottom: 1.5rem;
+        }
+        
+        .forgot-password a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        
+        .forgot-password a:hover {
+            text-decoration: underline;
+        }
+
+        /* Success/Error Messages */
+        .message {
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .message.success {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: var(--success-color);
+        }
+        
+        .message.error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: var(--error-color);
+        }
+        
+        .message.warning {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            color: var(--warning-color);
+        }
+
+        /* 2FA Specific */
+        .code-inputs {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: center;
+            margin-bottom: 2rem;
+        }
+        
+        .code-input {
+            width: 60px;
+            height: 60px;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+        
+        .code-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        /* Page Specific Styles */
+        .page {
+            display: none;
+        }
+        
+        .page.active {
+            display: block;
+        }
+        
+        .page-nav {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            display: flex;
+            gap: 1rem;
+            z-index: 1000;
+        }
+        
+        .page-btn {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+        
+        .page-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
+        }
+        
+        .page-btn.active {
+            background: var(--success-color);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .auth-container {
+                padding: 1rem;
+                padding-top: 5rem;
+            }
+            
+            .auth-card {
+                padding: 2rem;
+            }
+            
+            .auth-title {
+                font-size: 1.75rem;
+            }
+            
+            .code-inputs {
+                gap: 0.5rem;
+            }
+            
+            .code-input {
+                width: 50px;
+                height: 50px;
+                font-size: 1.25rem;
+            }
+            
+            .page-nav {
+                bottom: 1rem;
+                right: 1rem;
+                flex-wrap: wrap;
+            }
+            
+            .page-btn {
+                padding: 0.5rem 1rem;
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container"></div>
+
+    <!-- Color Customization Panel -->
+    <div class="color-panel" id="colorPanel">
+        <button class="color-panel-toggle" onclick="toggleColorPanel()">🎨</button>
+        <h3>🎨 Choose Theme</h3>
+        
+        <div class="color-scheme active" onclick="changeColorScheme('default')">
+            <div class="color-preview">
+                <div class="color-dot" style="background: #6366f1;"></div>
+                <div class="color-dot" style="background: #8b5cf6;"></div>
+                <div class="color-dot" style="background: #06b6d4;"></div>
+            </div>
+            <span class="scheme-name">Purple Flow</span>
+        </div>
+        
+        <div class="color-scheme" onclick="changeColorScheme('ocean')">
+            <div class="color-preview">
+                <div class="color-dot" style="background: #0ea5e9;"></div>
+                <div class="color-dot" style="background: #06b6d4;"></div>
+                <div class="color-dot" style="background: #0891b2;"></div>
+            </div>
+            <span class="scheme-name">Ocean Blue</span>
+        </div>
+        
+        <div class="color-scheme" onclick="changeColorScheme('emerald')">
+            <div class="color-preview">
+                <div class="color-dot" style="background: #10b981;"></div>
+                <div class="color-dot" style="background: #059669;"></div>
+                <div class="color-dot" style="background: #047857;"></div>
+            </div>
+            <span class="scheme-name">Emerald Green</span>
+        </div>
+        
+        <div class="color-scheme" onclick="changeColorScheme('sunset')">
+            <div class="color-preview">
+                <div class="color-dot" style="background: #f59e0b;"></div>
+                <div class="color-dot" style="background: #ef4444;"></div>
+                <div class="color-dot" style="background: #dc2626;"></div>
+            </div>
+            <span class="scheme-name">Sunset Orange</span>
+        </div>
+        
+        <div class="color-scheme" onclick="changeColorScheme('rose')">
+            <div class="color-preview">
+                <div class="color-dot" style="background: #ec4899;"></div>
+                <div class="color-dot" style="background: #be185d;"></div>
+                <div class="color-dot" style="background: #9d174d;"></div>
+            </div>
+            <span class="scheme-name">Rose Pink</span>
+        </div>
+        
+        <div class="color-scheme" onclick="changeColorScheme('cyber')">
+            <div class="color-preview">
+                <div class="color-dot" style="background: #00ff88;"></div>
+                <div class="color-dot" style="background: #00d4ff;"></div>
+                <div class="color-dot" style="background: #ff0080;"></div>
+            </div>
+            <span class="scheme-name">Cyber Neon</span>
+        </div>
+        
+        <button class="reset-btn" onclick="changeColorScheme('default')">Reset to Default</button>
+    </div>
+
+    <div class="content-overlay">
+        <div class="auth-container">
+            <div class="auth-card">
+                <div class="auth-header">
+                    <div class="auth-icon">📧</div>
+                    <h1 class="auth-title">Verify Your Email</h1>
+                    <p class="auth-subtitle">We've sent a verification link to <strong>user@example.com</strong>. Click the link to activate your account.</p>
+                </div>
+
+                <div class="message warning">
+                    <span>⏰</span>
+                    Didn't receive the email? Check your spam folder or request a new one.
+                </div>
+
+                <form class="auth-form">
+                    <button type="button" class="btn-primary" onclick="resendVerification()">Resend Verification Email</button>
+                    <button type="button" class="btn-secondary" onclick="changeEmail()">Change Email Address</button>
+                </form>
+
+                <div class="auth-links">
+                    Already verified? <a href="#" onclick="showPage('login')">Sign in to your account</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Three.js setup for animated background
+        let scene, camera, renderer, particles, mouseX = 0, mouseY = 0;
+        
+        function initThreeJS() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+            
+            createParticleSystem();
+            
+            camera.position.z = 100;
+            animate();
+        }
+        
+        function createParticleSystem() {
+            const geometry = new THREE.BufferGeometry();
+            const particleCount = 1500;
+            const positions = new Float32Array(particleCount * 3);
+            const velocities = new Float32Array(particleCount * 3);
+            const colors = new Float32Array(particleCount * 3);
+            
+            for (let i = 0; i < particleCount * 3; i += 3) {
+                positions[i] = (Math.random() - 0.5) * 300;
+                positions[i + 1] = (Math.random() - 0.5) * 300;
+                positions[i + 2] = (Math.random() - 0.5) * 300;
+                
+                velocities[i] = (Math.random() - 0.5) * 0.02;
+                velocities[i + 1] = (Math.random() - 0.5) * 0.02;
+                velocities[i + 2] = (Math.random() - 0.5) * 0.02;
+                
+                colors[i] = 0.39 * (Math.random() * 0.6 + 0.4);
+                colors[i + 1] = 0.4 * (Math.random() * 0.6 + 0.4);
+                colors[i + 2] = 0.94 * (Math.random() * 0.6 + 0.4);
+            }
+            
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('velocity', new THREE.BufferAttribute(velocities, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            
+            const material = new THREE.PointsMaterial({
+                size: 2,
+                transparent: true,
+                opacity: 0.6,
+                vertexColors: true,
+                blending: THREE.AdditiveBlending
+            });
+            
+            particles = new THREE.Points(geometry, material);
+            scene.add(particles);
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const targetX = mouseX * 0.0005;
+            const targetY = mouseY * 0.0005;
+            
+            if (particles) {
+                particles.rotation.x += (targetY - particles.rotation.x) * 0.02;
+                particles.rotation.y += (targetX - particles.rotation.y) * 0.02;
+                
+                const positions = particles.geometry.attributes.position.array;
+                const velocities = particles.geometry.attributes.velocity.array;
+                
+                for (let i = 0; i < positions.length; i += 3) {
+                    positions[i] += velocities[i];
+                    positions[i + 1] += velocities[i + 1];
+                    positions[i + 2] += velocities[i + 2];
+                    
+                    if (positions[i] > 150) positions[i] = -150;
+                    if (positions[i] < -150) positions[i] = 150;
+                    if (positions[i + 1] > 150) positions[i + 1] = -150;
+                    if (positions[i + 1] < -150) positions[i + 1] = 150;
+                    if (positions[i + 2] > 150) positions[i + 2] = -150;
+                    if (positions[i + 2] < -150) positions[i + 2] = 150;
+                }
+                
+                particles.geometry.attributes.position.needsUpdate = true;
+            }
+            
+            renderer.render(scene, camera);
+        }
+        
+        // Mouse tracking
+        document.addEventListener('mousemove', (event) => {
+            mouseX = event.clientX - window.innerWidth / 2;
+            mouseY = event.clientY - window.innerHeight / 2;
+        });
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Color Customization Functions
+        const colorSchemes = {
+            default: {
+                primary: '#6366f1',
+                secondary: '#8b5cf6',
+                accent: '#06b6d4',
+                particleColors: [0.39, 0.4, 0.94]
+            },
+            ocean: {
+                primary: '#0ea5e9',
+                secondary: '#06b6d4',
+                accent: '#0891b2',
+                particleColors: [0.05, 0.65, 0.91]
+            },
+            emerald: {
+                primary: '#10b981',
+                secondary: '#059669',
+                accent: '#047857',
+                particleColors: [0.06, 0.73, 0.51]
+            },
+            sunset: {
+                primary: '#f59e0b',
+                secondary: '#ef4444',
+                accent: '#dc2626',
+                particleColors: [0.96, 0.62, 0.04]
+            },
+            rose: {
+                primary: '#ec4899',
+                secondary: '#be185d',
+                accent: '#9d174d',
+                particleColors: [0.93, 0.28, 0.6]
+            },
+            cyber: {
+                primary: '#00ff88',
+                secondary: '#00d4ff',
+                accent: '#ff0080',
+                particleColors: [0, 1, 0.53]
+            }
+        };
+        
+        function toggleColorPanel() {
+            const panel = document.getElementById('colorPanel');
+            panel.classList.toggle('open');
+        }
+        
+        function changeColorScheme(scheme) {
+            const colors = colorSchemes[scheme];
+            const root = document.documentElement;
+            
+            root.style.setProperty('--primary-color', colors.primary);
+            root.style.setProperty('--secondary-color', colors.secondary);
+            root.style.setProperty('--accent-color', colors.accent);
+            
+            document.querySelectorAll('.color-scheme').forEach(el => el.classList.remove('active'));
+            event.target.closest('.color-scheme').classList.add('active');
+            
+            if (particles && particles.geometry.attributes.color) {
+                const colorArray = particles.geometry.attributes.color.array;
+                const [r, g, b] = colors.particleColors;
+                
+                for (let i = 0; i < colorArray.length; i += 3) {
+                    colorArray[i] = r * (Math.random() * 0.6 + 0.4);
+                    colorArray[i + 1] = g * (Math.random() * 0.6 + 0.4);
+                    colorArray[i + 2] = b * (Math.random() * 0.6 + 0.4);
+                }
+                
+                particles.geometry.attributes.color.needsUpdate = true;
+            }
+            
+            setTimeout(() => {
+                document.getElementById('colorPanel').classList.remove('open');
+            }, 500);
+        }
+        
+        // Close color panel when clicking outside
+        document.addEventListener('click', (e) => {
+            const panel = document.getElementById('colorPanel');
+            const toggle = panel.querySelector('.color-panel-toggle');
+            
+            if (!panel.contains(e.target) && !toggle.contains(e.target)) {
+                panel.classList.remove('open');
+            }
+        });
+
+        // Page Navigation
+        function showPage(pageId) {
+            // Hide all pages
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            
+            // Show selected page
+            document.getElementById(pageId).classList.add('active');
+            
+            // Update navigation buttons
+            document.querySelectorAll('.page-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+
+        // Password Toggle
+        function togglePassword(button) {
+            const input = button.previousElementSibling;
+            if (input.type === 'password') {
+                input.type = 'text';
+                button.textContent = '🙈';
+            } else {
+                input.type = 'password';
+                button.textContent = '👁️';
+            }
+        }
+
+        // 2FA Code Input Navigation
+        function moveToNext(current, index) {
+            if (current.value.length === 1 && index < 5) {
+                const nextInput = document.querySelectorAll('.code-input')[index + 1];
+                nextInput.focus();
+            }
+        }
+
+        // Handle backspace in 2FA inputs
+        document.querySelectorAll('.code-input').forEach((input, index) => {
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && input.value === '' && index > 0) {
+                    const prevInput = document.querySelectorAll('.code-input')[index - 1];
+                    prevInput.focus();
+                }
+            });
+        });
+
+        // Form Submissions (Demo)
+        document.querySelectorAll('form').forEach(form => {
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                // Show loading state
+                const submitBtn = form.querySelector('.btn-primary');
+                const originalText = submitBtn.textContent;
+                submitBtn.textContent = 'Processing...';
+                submitBtn.disabled = true;
+                
+                // Simulate API call
+                setTimeout(() => {
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
+                    
+                    // Show success message or redirect
+                    if (form.closest('#signup')) {
+                        showPage('verify');
+                    } else if (form.closest('#login')) {
+                        showPage('2fa');
+                    } else if (form.closest('#forgot')) {
+                        document.getElementById('resetMessage').style.display = 'flex';
+                    }
+                }, 2000);
+            });
+        });
+
+        // Utility Functions
+        function resendVerification() {
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = 'Sending...';
+            btn.disabled = true;
+            
+            setTimeout(() => {
+                btn.textContent = 'Email Sent!';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                }, 2000);
+            }, 1500);
+        }
+
+        function changeEmail() {
+            const newEmail = prompt('Enter your new email address:');
+            if (newEmail) {
+                document.querySelector('#verify .auth-subtitle strong').textContent = newEmail;
+            }
+        }
+
+        function resend2FA() {
+            const link = event.target;
+            const originalText = link.textContent;
+            link.textContent = 'Sending...';
+            
+            setTimeout(() => {
+                link.textContent = 'Code sent!';
+                setTimeout(() => {
+                    link.textContent = originalText;
+                }, 2000);
+            }, 1500);
+        }
+
+        // Initialize
+        initThreeJS();
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'971340fb27ca8adc',t:'MTc1NTUzOTQzMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

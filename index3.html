@@ -1,0 +1,1408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatFlow AI - Intelligent Chatbot Platform</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary-color: #6366f1;
+            --secondary-color: #8b5cf6;
+            --accent-color: #06b6d4;
+            --text-primary: #ffffff;
+            --text-secondary: #e2e8f0;
+            --text-muted: #94a3b8;
+            --bg-primary: #0f172a;
+            --bg-secondary: rgba(15, 23, 42, 0.8);
+            --border-color: rgba(99, 102, 241, 0.2);
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+        
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        
+        .content-overlay {
+            position: relative;
+            z-index: 2;
+            background: rgba(15, 23, 42, 0.1);
+        }
+        
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 4px;
+        }
+        
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 1rem 2rem;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+            z-index: 100;
+            transition: all 0.3s ease;
+        }
+        
+        nav.scrolled {
+            background: rgba(15, 23, 42, 0.98);
+            box-shadow: 0 10px 40px rgba(99, 102, 241, 0.1);
+        }
+        
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            text-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+            position: relative;
+        }
+        
+        .logo::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, var(--primary-color), transparent);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 3rem;
+            list-style: none;
+        }
+        
+        .nav-links a {
+            color: var(--text-primary);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 1rem;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--primary-color);
+            transition: width 0.3s ease;
+        }
+        
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+        
+        .nav-links a:hover {
+            color: var(--primary-color);
+        }
+        
+        .nav-cta {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: #fff;
+            padding: 0.75rem 2rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .nav-cta::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .nav-cta:hover::before {
+            left: 100%;
+        }
+        
+        .nav-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(99, 102, 241, 0.4);
+        }
+        
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+            position: relative;
+            background: radial-gradient(ellipse at center, rgba(99, 102, 241, 0.05) 0%, transparent 70%);
+        }
+        
+        .hero-content {
+            max-width: 1000px;
+            z-index: 10;
+            animation: fadeInUp 1s ease-out;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .hero-badge {
+            display: inline-block;
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            color: var(--primary-color);
+            padding: 0.75rem 1.5rem;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            font-family: 'JetBrains Mono', monospace;
+            animation: glow 2s infinite alternate;
+        }
+        
+        @keyframes glow {
+            from { box-shadow: 0 0 20px rgba(99, 102, 241, 0.2); }
+            to { box-shadow: 0 0 30px rgba(99, 102, 241, 0.4); }
+        }
+        
+        .hero h1 {
+            font-size: 5rem;
+            font-weight: 900;
+            margin-bottom: 2rem;
+            background: linear-gradient(135deg, #ffffff, var(--primary-color), var(--secondary-color));
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.1;
+            animation: gradientShift 3s ease-in-out infinite;
+        }
+        
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        
+        .hero p {
+            font-size: 1.4rem;
+            color: var(--text-secondary);
+            margin-bottom: 3rem;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            line-height: 1.7;
+        }
+        
+        .hero-cta {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 4rem;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: #fff;
+            padding: 1.2rem 3rem;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .btn-primary:hover::before {
+            left: 100%;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 20px 50px rgba(99, 102, 241, 0.5);
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-primary);
+            padding: 1.2rem 3rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-secondary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 100%;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            transition: width 0.3s ease;
+            z-index: -1;
+        }
+        
+        .btn-secondary:hover::before {
+            width: 100%;
+        }
+        
+        .btn-secondary:hover {
+            border-color: var(--primary-color);
+            color: #fff;
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(99, 102, 241, 0.3);
+        }
+        
+        /* Live Chat Demo */
+        .chat-demo {
+            position: absolute;
+            bottom: 3rem;
+            right: 3rem;
+            width: 400px;
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid var(--primary-color);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(99, 102, 241, 0.3);
+            backdrop-filter: blur(20px);
+        }
+        
+        .chat-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .chat-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+        
+        .chat-info h4 {
+            color: #fff;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        
+        .chat-info p {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+        }
+        
+        .chat-status {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.8rem;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success-color);
+            animation: pulse 2s infinite;
+        }
+        
+        .chat-messages {
+            padding: 1.5rem;
+            height: 300px;
+            overflow-y: auto;
+        }
+        
+        .message {
+            margin-bottom: 1.5rem;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: messageSlideIn 0.5s ease-out forwards;
+        }
+        
+        @keyframes messageSlideIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .message.user {
+            text-align: right;
+        }
+        
+        .message.bot {
+            text-align: left;
+        }
+        
+        .message-bubble {
+            display: inline-block;
+            padding: 1rem 1.5rem;
+            border-radius: 20px;
+            max-width: 80%;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        
+        .message.user .message-bubble {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: #fff;
+        }
+        
+        .message.bot .message-bubble {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--text-secondary);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+        }
+        
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-top: 1rem;
+        }
+        
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+        
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            animation: typingBounce 1.4s infinite ease-in-out;
+        }
+        
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+        
+        @keyframes typingBounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+        
+        /* Features Section */
+        .features {
+            padding: 8rem 2rem;
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(99, 102, 241, 0.02));
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .section-header {
+            text-align: center;
+            margin-bottom: 6rem;
+        }
+        
+        .section-badge {
+            display: inline-block;
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--primary-color);
+            padding: 0.5rem 1.5rem;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(99, 102, 241, 0.2);
+        }
+        
+        .section-header h2 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+            line-height: 1.2;
+        }
+        
+        .section-header p {
+            font-size: 1.3rem;
+            color: var(--text-secondary);
+            max-width: 700px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 3rem;
+        }
+        
+        .feature-card {
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 20px;
+            padding: 3rem;
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .feature-card:hover::before {
+            opacity: 1;
+        }
+        
+        .feature-card:hover {
+            border-color: var(--primary-color);
+            box-shadow: 0 20px 60px rgba(99, 102, 241, 0.2);
+            transform: translateY(-10px);
+        }
+        
+        .feature-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 2rem;
+            font-size: 2rem;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .feature-card h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+            position: relative;
+            z-index: 2;
+        }
+        
+        .feature-card p {
+            color: var(--text-secondary);
+            line-height: 1.7;
+            font-size: 1.1rem;
+            position: relative;
+            z-index: 2;
+        }
+        
+        /* Use Cases Section */
+        .use-cases {
+            padding: 8rem 2rem;
+            background: rgba(15, 23, 42, 0.95);
+        }
+        
+        .use-cases-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .use-case-card {
+            background: rgba(99, 102, 241, 0.05);
+            border: 1px solid rgba(99, 102, 241, 0.1);
+            border-radius: 15px;
+            padding: 2.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .use-case-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary-color);
+            box-shadow: 0 15px 40px rgba(99, 102, 241, 0.2);
+        }
+        
+        .use-case-icon {
+            font-size: 3rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .use-case-card h3 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+        
+        .use-case-card p {
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+        
+        /* Pricing Section */
+        .pricing {
+            padding: 8rem 2rem;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.03), rgba(15, 23, 42, 0.9));
+        }
+        
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 3rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .pricing-card {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 25px;
+            padding: 3rem 2.5rem;
+            text-align: center;
+            position: relative;
+            transition: all 0.4s ease;
+            overflow: hidden;
+        }
+        
+        .pricing-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .pricing-card:hover::before {
+            opacity: 1;
+        }
+        
+        .pricing-card.featured {
+            border-color: var(--primary-color);
+            box-shadow: 0 30px 80px rgba(99, 102, 241, 0.3);
+            transform: scale(1.05);
+        }
+        
+        .pricing-card:hover {
+            transform: translateY(-15px);
+            box-shadow: 0 25px 70px rgba(99, 102, 241, 0.2);
+        }
+        
+        .pricing-badge {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: #fff;
+            padding: 0.75rem 2rem;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
+        
+        .pricing-card h3 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+            position: relative;
+            z-index: 2;
+        }
+        
+        .pricing-price {
+            font-size: 4rem;
+            font-weight: 900;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+            font-family: 'JetBrains Mono', monospace;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .pricing-period {
+            color: var(--text-secondary);
+            margin-bottom: 3rem;
+            font-size: 1.1rem;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .pricing-features {
+            list-style: none;
+            margin-bottom: 3rem;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .pricing-features li {
+            padding: 0.75rem 0;
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .pricing-features li:before {
+            content: "✓";
+            color: var(--primary-color);
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        
+        /* CTA Section */
+        .cta-section {
+            padding: 8rem 2rem;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(15, 23, 42, 0.9));
+            text-align: center;
+        }
+        
+        .cta-content {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .cta-section h2 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 2rem;
+            color: var(--text-primary);
+        }
+        
+        .cta-section p {
+            font-size: 1.3rem;
+            color: var(--text-secondary);
+            margin-bottom: 3rem;
+            line-height: 1.6;
+        }
+        
+        /* Footer */
+        footer {
+            background: rgba(15, 23, 42, 0.98);
+            padding: 4rem 2rem 2rem;
+            border-top: 1px solid rgba(99, 102, 241, 0.2);
+        }
+        
+        .footer-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 3rem;
+        }
+        
+        .footer-section h4 {
+            color: var(--primary-color);
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            font-size: 1.2rem;
+        }
+        
+        .footer-section a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            display: block;
+            margin-bottom: 0.75rem;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+        
+        .footer-section a:hover {
+            color: var(--primary-color);
+            transform: translateX(5px);
+        }
+        
+        .footer-bottom {
+            text-align: center;
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-muted);
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+            
+            .hero h1 {
+                font-size: 3rem;
+            }
+            
+            .hero p {
+                font-size: 1.2rem;
+            }
+            
+            .hero-cta {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .chat-demo {
+                position: relative;
+                right: auto;
+                bottom: auto;
+                margin: 2rem auto 0;
+                width: 100%;
+                max-width: 350px;
+            }
+            
+            .pricing-card.featured {
+                transform: none;
+            }
+            
+            .section-header h2 {
+                font-size: 2.5rem;
+            }
+            
+            .cta-section h2 {
+                font-size: 2.5rem;
+            }
+        }
+        
+        /* Scroll animations */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.6s ease;
+        }
+        
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container"></div>
+
+    <div class="content-overlay">
+        <!-- Navigation -->
+        <nav id="navbar">
+            <div class="nav-container">
+                <div class="logo">ChatFlow AI</div>
+                <ul class="nav-links">
+                    <li><a href="#features">Features</a></li>
+                    <li><a href="#use-cases">Use Cases</a></li>
+                    <li><a href="#pricing">Pricing</a></li>
+                    <li><a href="#contact">Contact</a></li>
+                </ul>
+                <a href="#" class="nav-cta">Start Free Trial</a>
+            </div>
+        </nav>
+
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="hero-content">
+                <div class="hero-badge">🤖 AI-Powered • No-Code • Enterprise Ready</div>
+                <h1>Intelligent Chatbots<br>That Actually Work</h1>
+                <p>Build, deploy, and scale AI-powered chatbots that understand context, learn from conversations, and deliver exceptional customer experiences across all channels.</p>
+                <div class="hero-cta">
+                    <a href="#" class="btn-primary">Start Free Trial</a>
+                    <a href="#" class="btn-secondary">Watch Demo</a>
+                </div>
+            </div>
+            
+            <div class="chat-demo">
+                <div class="chat-header">
+                    <div class="chat-avatar">🤖</div>
+                    <div class="chat-info">
+                        <h4>ChatFlow Assistant</h4>
+                        <p>AI Customer Support</p>
+                    </div>
+                    <div class="chat-status">
+                        <div class="status-dot"></div>
+                        Online
+                    </div>
+                </div>
+                <div class="chat-messages" id="chatMessages">
+                    <div class="message bot">
+                        <div class="message-bubble">
+                            Hi! I'm your AI assistant. How can I help you today?
+                        </div>
+                    </div>
+                </div>
+                <div class="typing-indicator" id="typingIndicator" style="display: none;">
+                    <div class="typing-dots">
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                    </div>
+                    AI is typing...
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section class="features fade-in" id="features">
+            <div class="container">
+                <div class="section-header">
+                    <div class="section-badge">🚀 Core Features</div>
+                    <h2>Everything You Need for Smart Conversations</h2>
+                    <p>Advanced AI capabilities, seamless integrations, and powerful analytics to create chatbots that truly understand and engage your customers.</p>
+                </div>
+                
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">🧠</div>
+                        <h3>Natural Language Processing</h3>
+                        <p>Advanced NLP powered by GPT-4 understands context, intent, and sentiment to provide human-like conversations that feel natural and engaging.</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">🔄</div>
+                        <h3>Multi-Channel Deployment</h3>
+                        <p>Deploy your chatbot across websites, mobile apps, WhatsApp, Telegram, Slack, and 50+ other platforms with a single click.</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">📊</div>
+                        <h3>Real-Time Analytics</h3>
+                        <p>Track conversations, measure satisfaction, identify bottlenecks, and optimize performance with comprehensive analytics dashboards.</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">🎯</div>
+                        <h3>Smart Lead Generation</h3>
+                        <p>Automatically qualify leads, collect contact information, and route high-value prospects to your sales team with intelligent workflows.</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">🔗</div>
+                        <h3>Seamless Integrations</h3>
+                        <p>Connect with CRM systems, help desks, e-commerce platforms, and 1000+ apps through our robust API and pre-built integrations.</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">🛡️</div>
+                        <h3>Enterprise Security</h3>
+                        <p>Bank-level encryption, GDPR compliance, and advanced access controls ensure your customer data stays secure and private.</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">🎨</div>
+                        <h3>Visual Flow Builder</h3>
+                        <p>Create complex conversation flows with our intuitive drag-and-drop interface. No coding required, unlimited possibilities.</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">🌍</div>
+                        <h3>Multi-Language Support</h3>
+                        <p>Serve global customers with support for 95+ languages, automatic translation, and culturally-aware responses.</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">⚡</div>
+                        <h3>Instant Human Handoff</h3>
+                        <p>Seamlessly transfer complex queries to human agents with full conversation context and customer history preserved.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Use Cases Section -->
+        <section class="use-cases fade-in" id="use-cases">
+            <div class="container">
+                <div class="section-header">
+                    <div class="section-badge">💼 Use Cases</div>
+                    <h2>Perfect for Every Industry</h2>
+                    <p>From customer support to sales automation, our AI chatbots adapt to your specific business needs and industry requirements.</p>
+                </div>
+                
+                <div class="use-cases-grid">
+                    <div class="use-case-card">
+                        <div class="use-case-icon">🛒</div>
+                        <h3>E-commerce</h3>
+                        <p>Product recommendations, order tracking, returns processing, and 24/7 shopping assistance.</p>
+                    </div>
+                    
+                    <div class="use-case-card">
+                        <div class="use-case-icon">🏥</div>
+                        <h3>Healthcare</h3>
+                        <p>Appointment scheduling, symptom checking, medication reminders, and patient support.</p>
+                    </div>
+                    
+                    <div class="use-case-card">
+                        <div class="use-case-icon">🏦</div>
+                        <h3>Banking</h3>
+                        <p>Account inquiries, transaction history, loan applications, and fraud prevention.</p>
+                    </div>
+                    
+                    <div class="use-case-card">
+                        <div class="use-case-icon">🎓</div>
+                        <h3>Education</h3>
+                        <p>Student enrollment, course information, assignment help, and campus navigation.</p>
+                    </div>
+                    
+                    <div class="use-case-card">
+                        <div class="use-case-icon">🏨</div>
+                        <h3>Hospitality</h3>
+                        <p>Booking assistance, concierge services, room service, and local recommendations.</p>
+                    </div>
+                    
+                    <div class="use-case-card">
+                        <div class="use-case-icon">💼</div>
+                        <h3>SaaS</h3>
+                        <p>User onboarding, feature explanations, billing support, and technical assistance.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pricing Section -->
+        <section class="pricing fade-in" id="pricing">
+            <div class="container">
+                <div class="section-header">
+                    <div class="section-badge">💰 Pricing Plans</div>
+                    <h2>Choose Your Plan</h2>
+                    <p>Flexible pricing that scales with your business. Start free and upgrade as your chatbot conversations grow.</p>
+                </div>
+                
+                <div class="pricing-grid">
+                    <div class="pricing-card">
+                        <h3>Starter</h3>
+                        <div class="pricing-price">$29</div>
+                        <div class="pricing-period">per month</div>
+                        <ul class="pricing-features">
+                            <li>1,000 conversations/month</li>
+                            <li>1 chatbot</li>
+                            <li>Basic NLP</li>
+                            <li>Web widget</li>
+                            <li>Email support</li>
+                            <li>Basic analytics</li>
+                        </ul>
+                        <a href="#" class="btn-secondary">Get Started</a>
+                    </div>
+                    
+                    <div class="pricing-card featured">
+                        <div class="pricing-badge">Most Popular</div>
+                        <h3>Professional</h3>
+                        <div class="pricing-price">$99</div>
+                        <div class="pricing-period">per month</div>
+                        <ul class="pricing-features">
+                            <li>10,000 conversations/month</li>
+                            <li>5 chatbots</li>
+                            <li>Advanced AI (GPT-4)</li>
+                            <li>Multi-channel deployment</li>
+                            <li>Priority support</li>
+                            <li>Advanced analytics</li>
+                            <li>Custom integrations</li>
+                            <li>Lead generation tools</li>
+                        </ul>
+                        <a href="#" class="btn-primary">Start Free Trial</a>
+                    </div>
+                    
+                    <div class="pricing-card">
+                        <h3>Enterprise</h3>
+                        <div class="pricing-price">$299</div>
+                        <div class="pricing-period">per month</div>
+                        <ul class="pricing-features">
+                            <li>Unlimited conversations</li>
+                            <li>Unlimited chatbots</li>
+                            <li>Custom AI training</li>
+                            <li>White-label solution</li>
+                            <li>Dedicated support</li>
+                            <li>Custom analytics</li>
+                            <li>API access</li>
+                            <li>On-premise deployment</li>
+                        </ul>
+                        <a href="#" class="btn-secondary">Contact Sales</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="cta-section fade-in">
+            <div class="cta-content">
+                <h2>Ready to Transform Customer Engagement?</h2>
+                <p>Join thousands of businesses using ChatFlow AI to automate support, increase sales, and delight customers 24/7.</p>
+                <div class="hero-cta">
+                    <a href="#" class="btn-primary">Start Your Free Trial</a>
+                    <a href="#" class="btn-secondary">Schedule Demo</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer id="contact">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>Product</h4>
+                    <a href="#">Features</a>
+                    <a href="#">Pricing</a>
+                    <a href="#">Integrations</a>
+                    <a href="#">API Documentation</a>
+                    <a href="#">Templates</a>
+                    <a href="#">Security</a>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Solutions</h4>
+                    <a href="#">Customer Support</a>
+                    <a href="#">Lead Generation</a>
+                    <a href="#">E-commerce</a>
+                    <a href="#">Healthcare</a>
+                    <a href="#">Education</a>
+                    <a href="#">Enterprise</a>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Resources</h4>
+                    <a href="#">Documentation</a>
+                    <a href="#">Help Center</a>
+                    <a href="#">Blog</a>
+                    <a href="#">Case Studies</a>
+                    <a href="#">Webinars</a>
+                    <a href="#">Community</a>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Company</h4>
+                    <a href="#">About Us</a>
+                    <a href="#">Careers</a>
+                    <a href="#">Press</a>
+                    <a href="#">Partners</a>
+                    <a href="#">Contact</a>
+                    <a href="#">Privacy Policy</a>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2024 ChatFlow AI Technologies. All rights reserved. Empowering conversations with artificial intelligence.</p>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // Three.js setup for animated background
+        let scene, camera, renderer, particles, mouseX = 0, mouseY = 0;
+        
+        function initThreeJS() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+            
+            createParticleSystem();
+            
+            camera.position.z = 100;
+            animate();
+        }
+        
+        function createParticleSystem() {
+            const geometry = new THREE.BufferGeometry();
+            const particleCount = 2000;
+            const positions = new Float32Array(particleCount * 3);
+            const velocities = new Float32Array(particleCount * 3);
+            const colors = new Float32Array(particleCount * 3);
+            
+            for (let i = 0; i < particleCount * 3; i += 3) {
+                positions[i] = (Math.random() - 0.5) * 300;
+                positions[i + 1] = (Math.random() - 0.5) * 300;
+                positions[i + 2] = (Math.random() - 0.5) * 300;
+                
+                velocities[i] = (Math.random() - 0.5) * 0.02;
+                velocities[i + 1] = (Math.random() - 0.5) * 0.02;
+                velocities[i + 2] = (Math.random() - 0.5) * 0.02;
+                
+                // Purple/blue color scheme
+                colors[i] = 0.39 * (Math.random() * 0.6 + 0.4);     // Red
+                colors[i + 1] = 0.4 * (Math.random() * 0.6 + 0.4);   // Green
+                colors[i + 2] = 0.94 * (Math.random() * 0.6 + 0.4);  // Blue
+            }
+            
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('velocity', new THREE.BufferAttribute(velocities, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            
+            const material = new THREE.PointsMaterial({
+                size: 2,
+                transparent: true,
+                opacity: 0.8,
+                vertexColors: true,
+                blending: THREE.AdditiveBlending
+            });
+            
+            particles = new THREE.Points(geometry, material);
+            scene.add(particles);
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const targetX = mouseX * 0.0005;
+            const targetY = mouseY * 0.0005;
+            
+            if (particles) {
+                particles.rotation.x += (targetY - particles.rotation.x) * 0.02;
+                particles.rotation.y += (targetX - particles.rotation.y) * 0.02;
+                
+                const positions = particles.geometry.attributes.position.array;
+                const velocities = particles.geometry.attributes.velocity.array;
+                
+                for (let i = 0; i < positions.length; i += 3) {
+                    positions[i] += velocities[i];
+                    positions[i + 1] += velocities[i + 1];
+                    positions[i + 2] += velocities[i + 2];
+                    
+                    if (positions[i] > 150) positions[i] = -150;
+                    if (positions[i] < -150) positions[i] = 150;
+                    if (positions[i + 1] > 150) positions[i + 1] = -150;
+                    if (positions[i + 1] < -150) positions[i + 1] = 150;
+                    if (positions[i + 2] > 150) positions[i + 2] = -150;
+                    if (positions[i + 2] < -150) positions[i + 2] = 150;
+                }
+                
+                particles.geometry.attributes.position.needsUpdate = true;
+            }
+            
+            renderer.render(scene, camera);
+        }
+        
+        // Mouse tracking
+        document.addEventListener('mousemove', (event) => {
+            mouseX = event.clientX - window.innerWidth / 2;
+            mouseY = event.clientY - window.innerHeight / 2;
+        });
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        
+        // Navbar scroll effect
+        window.addEventListener('scroll', () => {
+            const navbar = document.getElementById('navbar');
+            if (window.scrollY > 100) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+        
+        // Scroll animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, observerOptions);
+        
+        document.querySelectorAll('.fade-in').forEach(el => {
+            observer.observe(el);
+        });
+        
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+        
+        // Chat demo animation
+        const chatMessages = [
+            { type: 'user', text: 'What are your business hours?' },
+            { type: 'bot', text: 'We\'re open 24/7! Our AI assistant is always here to help, and human agents are available Monday-Friday 9 AM to 6 PM EST.' },
+            { type: 'user', text: 'Can you help me track my order?' },
+            { type: 'bot', text: 'Absolutely! Please provide your order number and I\'ll get the latest tracking information for you.' },
+            { type: 'user', text: 'ORDER-12345' },
+            { type: 'bot', text: 'Great! Order #12345 is currently in transit and will arrive tomorrow by 3 PM. You\'ll receive a notification when it\'s delivered. 📦' }
+        ];
+        
+        let currentMessageIndex = 0;
+        
+        function addChatMessage(message, delay = 0) {
+            setTimeout(() => {
+                const messagesContainer = document.getElementById('chatMessages');
+                const typingIndicator = document.getElementById('typingIndicator');
+                
+                // Show typing indicator for bot messages
+                if (message.type === 'bot') {
+                    typingIndicator.style.display = 'flex';
+                    
+                    setTimeout(() => {
+                        typingIndicator.style.display = 'none';
+                        
+                        const messageDiv = document.createElement('div');
+                        messageDiv.className = `message ${message.type}`;
+                        messageDiv.innerHTML = `<div class="message-bubble">${message.text}</div>`;
+                        
+                        messagesContainer.appendChild(messageDiv);
+                        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                        
+                        // Trigger next message
+                        currentMessageIndex++;
+                        if (currentMessageIndex < chatMessages.length) {
+                            addChatMessage(chatMessages[currentMessageIndex], 2000);
+                        } else {
+                            // Reset after all messages
+                            setTimeout(() => {
+                                messagesContainer.innerHTML = `
+                                    <div class="message bot">
+                                        <div class="message-bubble">
+                                            Hi! I'm your AI assistant. How can I help you today?
+                                        </div>
+                                    </div>
+                                `;
+                                currentMessageIndex = 0;
+                                setTimeout(() => {
+                                    addChatMessage(chatMessages[currentMessageIndex], 3000);
+                                }, 2000);
+                            }, 5000);
+                        }
+                    }, 1500);
+                } else {
+                    // User message - no typing indicator
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = `message ${message.type}`;
+                    messageDiv.innerHTML = `<div class="message-bubble">${message.text}</div>`;
+                    
+                    messagesContainer.appendChild(messageDiv);
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    
+                    // Trigger next message
+                    currentMessageIndex++;
+                    if (currentMessageIndex < chatMessages.length) {
+                        addChatMessage(chatMessages[currentMessageIndex], 1000);
+                    }
+                }
+            }, delay);
+        }
+        
+        // Initialize
+        initThreeJS();
+        
+        // Start chat animation after page load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                addChatMessage(chatMessages[currentMessageIndex], 2000);
+            }, 3000);
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97139acb46558985',t:'MTc1NTU0MzEwOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

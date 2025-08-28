@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vector Search Testing - ChatFlow AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #8b5cf6;
+            --accent: #06b6d4;
+            --background: #0a0a0a;
+            --surface: #111111;
+            --surface-light: #1a1a1a;
+            --text-primary: #ffffff;
+            --text-secondary: #a3a3a3;
+            --border: #2a2a2a;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --error: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--background);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .dashboard-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            padding: 2rem 0;
+            position: fixed;
+            height: 100vh;
+            width: 280px;
+            overflow-y: auto;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            padding: 0 2rem 2rem;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-menu {
+            list-style: none;
+        }
+
+        .nav-item {
+            margin-bottom: 0.25rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.875rem 2rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: all 0.3s;
+            font-size: 0.95rem;
+        }
+
+        .nav-link:hover {
+            background: var(--surface-light);
+            color: var(--text-primary);
+        }
+
+        .nav-link.active {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 280px;
+            padding: 2rem;
+        }
+
+        .header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        /* Search Interface */
+        .search-container {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .search-panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+        }
+
+        .search-form {
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            padding: 0.875rem;
+            background: var(--background);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-family: inherit;
+        }
+
+        .form-textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.875rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Search Options */
+        .search-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .option-card {
+            background: var(--background);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .option-card:hover {
+            border-color: var(--primary);
+        }
+
+        .option-card.active {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .option-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .option-desc {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        /* Results Panel */
+        .results-panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .results-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .results-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .results-meta {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .results-content {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .result-item {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            transition: background 0.3s;
+        }
+
+        .result-item:hover {
+            background: var(--background);
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .result-score {
+            background: var(--primary);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .result-content-text {
+            margin-bottom: 1rem;
+            line-height: 1.6;
+        }
+
+        .result-meta {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .result-tag {
+            background: var(--surface-light);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+        }
+
+        /* Loading */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .no-results {
+            padding: 3rem;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        .no-results-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Performance Metrics */
+        .performance-metrics {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .metric-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        /* Example Queries */
+        .example-queries {
+            margin-top: 2rem;
+        }
+
+        .example-title {
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .example-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .example-query {
+            background: var(--background);
+            border: 1px solid var(--border);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .example-query:hover {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .search-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                display: none;
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .search-options {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-layout">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="logo">ChatFlow AI</div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="../dashboard.html" class="nav-link">
+                        <span>📊</span> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="training.html" class="nav-link">
+                        <span>🧠</span> Training
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="search-test.html" class="nav-link active">
+                        <span>🔍</span> Search Test
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="analytics.html" class="nav-link">
+                        <span>📈</span> Analytics
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="../user/profile.html" class="nav-link">
+                        <span>👤</span> Profile
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <div class="header">
+                <h1>Vector Search Testing</h1>
+            </div>
+
+            <!-- Performance Metrics -->
+            <div class="performance-metrics">
+                <div class="metric-card">
+                    <div class="metric-value" id="response-time">--</div>
+                    <div class="metric-label">Response Time (ms)</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="results-count">--</div>
+                    <div class="metric-label">Results Found</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="avg-similarity">--</div>
+                    <div class="metric-label">Avg Similarity</div>
+                </div>
+            </div>
+
+            <!-- Search Container -->
+            <div class="search-container">
+                <!-- Search Panel -->
+                <div class="search-panel">
+                    <h2 style="margin-bottom: 1.5rem;">Search Configuration</h2>
+                    
+                    <form class="search-form" id="search-form">
+                        <div class="form-group">
+                            <label class="form-label">Search Query</label>
+                            <textarea class="form-textarea" name="query" placeholder="Enter your search query..." required></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Chatbot</label>
+                            <select class="form-select" name="chatbot_id" required>
+                                <option value="">Select Chatbot</option>
+                                <option value="chatbot-1">Customer Support Bot</option>
+                                <option value="chatbot-2">Sales Assistant</option>
+                                <option value="chatbot-3">FAQ Bot</option>
+                            </select>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Max Results</label>
+                                <input type="number" class="form-input" name="max_results" value="10" min="1" max="50">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Similarity Threshold</label>
+                                <input type="number" class="form-input" name="similarity_threshold" value="0.8" min="0" max="1" step="0.1">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Search Types</label>
+                            <div class="search-options">
+                                <div class="option-card active" data-type="question">
+                                    <div class="option-title">Questions</div>
+                                    <div class="option-desc">User questions and queries</div>
+                                </div>
+                                <div class="option-card active" data-type="answer">
+                                    <div class="option-title">Answers</div>
+                                    <div class="option-desc">Bot responses and answers</div>
+                                </div>
+                                <div class="option-card active" data-type="document_chunk">
+                                    <div class="option-title">Documents</div>
+                                    <div class="option-desc">Document chunks and content</div>
+                                </div>
+                                <div class="option-card active" data-type="knowledge">
+                                    <div class="option-title">Knowledge</div>
+                                    <div class="option-desc">Knowledge base entries</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Category Filter (Optional)</label>
+                            <input type="text" class="form-input" name="category_filter" placeholder="e.g., support, sales, general">
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" id="search-btn">
+                            <span id="search-text">🔍 Search</span>
+                            <span id="search-spinner" class="loading-spinner" style="display: none;"></span>
+                        </button>
+                    </form>
+
+                    <!-- Example Queries -->
+                    <div class="example-queries">
+                        <div class="example-title">Example Queries</div>
+                        <div class="example-list">
+                            <div class="example-query" onclick="setQuery('How do I reset my password?')">How do I reset my password?</div>
+                            <div class="example-query" onclick="setQuery('What are your pricing plans?')">What are your pricing plans?</div>
+                            <div class="example-query" onclick="setQuery('How to integrate the API?')">How to integrate the API?</div>
+                            <div class="example-query" onclick="setQuery('Cancel my subscription')">Cancel my subscription</div>
+                            <div class="example-query" onclick="setQuery('Refund policy')">Refund policy</div>
+                            <div class="example-query" onclick="setQuery('Technical support')">Technical support</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Results Panel -->
+                <div class="results-panel">
+                    <div class="results-header">
+                        <div class="results-title">Search Results</div>
+                        <div class="results-meta" id="results-meta">Ready to search</div>
+                    </div>
+                    <div class="results-content" id="results-content">
+                        <div class="no-results">
+                            <div class="no-results-icon">🔍</div>
+                            <div>Enter a search query to see results</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let selectedSearchTypes = ['question', 'answer', 'document_chunk', 'knowledge'];
+
+        // Search type selection
+        document.querySelectorAll('.option-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const type = card.dataset.type;
+                const isActive = card.classList.contains('active');
+                
+                if (isActive) {
+                    card.classList.remove('active');
+                    selectedSearchTypes = selectedSearchTypes.filter(t => t !== type);
+                } else {
+                    card.classList.add('active');
+                    selectedSearchTypes.push(type);
+                }
+            });
+        });
+
+        // Example query selection
+        function setQuery(query) {
+            document.querySelector('textarea[name="query"]').value = query;
+        }
+
+        // Search form submission
+        document.getElementById('search-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const searchData = {
+                query: formData.get('query'),
+                chatbot_id: formData.get('chatbot_id'),
+                max_results: parseInt(formData.get('max_results')),
+                similarity_threshold: parseFloat(formData.get('similarity_threshold')),
+                search_types: selectedSearchTypes,
+                category_filter: formData.get('category_filter') || null
+            };
+
+            await performSearch(searchData);
+        });
+
+        async function performSearch(searchData) {
+            const searchBtn = document.getElementById('search-btn');
+            const searchText = document.getElementById('search-text');
+            const searchSpinner = document.getElementById('search-spinner');
+            const resultsContent = document.getElementById('results-content');
+            const resultsMeta = document.getElementById('results-meta');
+
+            // Show loading state
+            searchText.style.display = 'none';
+            searchSpinner.style.display = 'inline-block';
+            searchBtn.disabled = true;
+            resultsContent.innerHTML = '<div style="padding: 2rem; text-align: center;"><div class="loading-spinner" style="margin: 0 auto;"></div><div style="margin-top: 1rem;">Searching...</div></div>';
+
+            const startTime = Date.now();
+
+            try {
+                const response = await fetch('/api/search', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + (localStorage.getItem('apiKey') || 'demo-key')
+                    },
+                    body: JSON.stringify(searchData)
+                });
+
+                const responseTime = Date.now() - startTime;
+                const results = await response.json();
+
+                if (response.ok) {
+                    displayResults(results, responseTime);
+                } else {
+                    throw new Error(results.detail || 'Search failed');
+                }
+
+            } catch (error) {
+                console.error('Search error:', error);
+                resultsContent.innerHTML = `
+                    <div class="no-results">
+                        <div class="no-results-icon">❌</div>
+                        <div>Search failed: ${error.message}</div>
+                        <div style="margin-top: 1rem; font-size: 0.875rem; color: var(--text-secondary);">
+                            Check your API connection and try again
+                        </div>
+                    </div>
+                `;
+                resultsMeta.textContent = 'Search failed';
+            } finally {
+                // Reset button state
+                searchText.style.display = 'inline-block';
+                searchSpinner.style.display = 'none';
+                searchBtn.disabled = false;
+            }
+        }
+
+        function displayResults(results, responseTime) {
+            const resultsContent = document.getElementById('results-content');
+            const resultsMeta = document.getElementById('results-meta');
+            const responseTimeEl = document.getElementById('response-time');
+            const resultsCountEl = document.getElementById('results-count');
+            const avgSimilarityEl = document.getElementById('avg-similarity');
+
+            // Update metrics
+            responseTimeEl.textContent = responseTime;
+            resultsCountEl.textContent = results.total || 0;
+            
+            if (results.results && results.results.length > 0) {
+                const avgSimilarity = results.results.reduce((sum, r) => sum + r.similarity_score, 0) / results.results.length;
+                avgSimilarityEl.textContent = avgSimilarity.toFixed(3);
+            } else {
+                avgSimilarityEl.textContent = '--';
+            }
+
+            // Update results meta
+            resultsMeta.textContent = `${results.total || 0} results found in ${responseTime}ms`;
+
+            if (!results.results || results.results.length === 0) {
+                resultsContent.innerHTML = `
+                    <div class="no-results">
+                        <div class="no-results-icon">🔍</div>
+                        <div>No results found</div>
+                        <div style="margin-top: 1rem; font-size: 0.875rem; color: var(--text-secondary);">
+                            Try adjusting your search query or lowering the similarity threshold
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            // Display results
+            const resultsHTML = results.results.map((result, index) => `
+                <div class="result-item">
+                    <div class="result-header">
+                        <div style="flex: 1;">
+                            <strong>${result.metadata?.title || `Result ${index + 1}`}</strong>
+                        </div>
+                        <div class="result-score">${(result.similarity_score * 100).toFixed(1)}%</div>
+                    </div>
+                    <div class="result-content-text">
+                        ${highlightQuery(result.content, results.query)}
+                    </div>
+                    <div class="result-meta">
+                        <span>Type: <strong>${result.source_type}</strong></span>
+                        ${result.metadata?.category ? `<span>Category: <strong>${result.metadata.category}</strong></span>` : ''}
+                        ${result.metadata?.tags?.length ? `<span>Tags: ${result.metadata.tags.map(tag => `<span class="result-tag">${tag}</span>`).join(' ')}</span>` : ''}
+                    </div>
+                </div>
+            `).join('');
+
+            resultsContent.innerHTML = resultsHTML;
+        }
+
+        function highlightQuery(text, query) {
+            if (!query || !text) return text;
+            
+            const words = query.toLowerCase().split(' ').filter(w => w.length > 2);
+            let highlightedText = text;
+            
+            words.forEach(word => {
+                const regex = new RegExp(`(${word})`, 'gi');
+                highlightedText = highlightedText.replace(regex, '<mark style="background: rgba(99, 102, 241, 0.3); padding: 0.1em 0.2em; border-radius: 3px;">$1</mark>');
+            });
+            
+            return highlightedText;
+        }
+
+        // Demo mode - simulate search results when API is not available
+        function generateDemoResults(searchData) {
+            const demoResults = [
+                {
+                    id: 'demo-1',
+                    content: 'To reset your password, go to the login page and click "Forgot Password". Enter your email address and we\'ll send you a reset link.',
+                    similarity_score: 0.95,
+                    source_type: 'faq',
+                    metadata: {
+                        title: 'Password Reset Instructions',
+                        category: 'support',
+                        tags: ['password', 'login', 'security']
+                    }
+                },
+                {
+                    id: 'demo-2',
+                    content: 'You can also reset your password from your account settings page. Navigate to Profile > Security > Change Password.',
+                    similarity_score: 0.87,
+                    source_type: 'knowledge',
+                    metadata: {
+                        title: 'Account Security Settings',
+                        category: 'support',
+                        tags: ['account', 'security', 'settings']
+                    }
+                },
+                {
+                    id: 'demo-3',
+                    content: 'If you\'re having trouble with password reset, please contact our support team at support@chatflowai.com',
+                    similarity_score: 0.82,
+                    source_type: 'document_chunk',
+                    metadata: {
+                        title: 'Support Contact Information',
+                        category: 'general',
+                        tags: ['support', 'contact', 'help']
+                    }
+                }
+            ];
+
+            return {
+                results: demoResults.slice(0, searchData.max_results),
+                total: demoResults.length,
+                query: searchData.query,
+                threshold: searchData.similarity_threshold
+            };
+        }
+
+        // Initialize demo data if needed
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set default chatbot
+            document.querySelector('select[name="chatbot_id"]').value = 'chatbot-1';
+        });
+    </script>
+</body>
+</html>

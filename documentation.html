@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Documentation - ChatFlow AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #8b5cf6;
+            --accent: #06b6d4;
+            --background: #0a0a0a;
+            --surface: #111111;
+            --surface-light: #1a1a1a;
+            --text-primary: #ffffff;
+            --text-secondary: #a3a3a3;
+            --border: #2a2a2a;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --code-bg: #1e1e1e;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--background);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        /* Navigation */
+        .navbar {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 1rem 2rem;
+            background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            z-index: 1000;
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            color: var(--text-primary);
+        }
+
+        .cta-button {
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);
+        }
+
+        /* Layout */
+        .docs-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            min-height: 100vh;
+            padding-top: 80px;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            padding: 2rem 0;
+            position: fixed;
+            height: calc(100vh - 80px);
+            width: 280px;
+            overflow-y: auto;
+        }
+
+        .sidebar-nav {
+            list-style: none;
+            padding: 0 1rem;
+        }
+
+        .sidebar-section {
+            margin-bottom: 2rem;
+        }
+
+        .sidebar-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 1rem;
+            padding: 0 1rem;
+        }
+
+        .sidebar-nav a {
+            display: block;
+            color: var(--text-secondary);
+            text-decoration: none;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            transition: all 0.3s;
+            font-size: 0.95rem;
+        }
+
+        .sidebar-nav a:hover {
+            background: var(--surface-light);
+            color: var(--text-primary);
+        }
+
+        .sidebar-nav a.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Content */
+        .content {
+            padding: 2rem;
+            margin-left: 280px;
+            max-width: 800px;
+        }
+
+        .content h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .content h2 {
+            font-size: 2rem;
+            font-weight: 600;
+            margin: 3rem 0 1.5rem 0;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+
+        .content h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 2rem 0 1rem 0;
+            color: var(--primary);
+        }
+
+        .content h4 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 1.5rem 0 1rem 0;
+            color: var(--text-primary);
+        }
+
+        .content p {
+            margin-bottom: 1.5rem;
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+
+        .content ul, .content ol {
+            margin-bottom: 1.5rem;
+            padding-left: 2rem;
+            color: var(--text-secondary);
+        }
+
+        .content li {
+            margin-bottom: 0.5rem;
+        }
+
+        /* Code blocks */
+        .code-block {
+            background: var(--code-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin: 1.5rem 0;
+            overflow: hidden;
+        }
+
+        .code-header {
+            background: var(--surface-light);
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .code-title {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .copy-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+
+        .copy-btn:hover {
+            opacity: 0.8;
+        }
+
+        pre {
+            padding: 1.5rem;
+            margin: 0;
+            overflow-x: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.875rem;
+            line-height: 1.6;
+        }
+
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--code-bg);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+        }
+
+        /* API Reference Cards */
+        .api-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin: 2rem 0;
+            overflow: hidden;
+        }
+
+        .api-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .api-method {
+            display: inline-block;
+            background: var(--success);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin-right: 1rem;
+        }
+
+        .api-method.post { background: var(--primary); }
+        .api-method.put { background: var(--warning); }
+        .api-method.delete { background: var(--error); }
+
+        .api-endpoint {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.1rem;
+            color: var(--text-primary);
+        }
+
+        .api-description {
+            margin-top: 1rem;
+            color: var(--text-secondary);
+        }
+
+        .api-body {
+            padding: 1.5rem;
+        }
+
+        .parameter-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+
+        .parameter-table th,
+        .parameter-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .parameter-table th {
+            background: var(--surface-light);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .parameter-table td {
+            color: var(--text-secondary);
+        }
+
+        .param-name {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--primary);
+            font-weight: 500;
+        }
+
+        .param-type {
+            background: var(--code-bg);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+        }
+
+        .required {
+            color: var(--error);
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        /* Table of Contents */
+        .toc {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .toc h3 {
+            margin: 0 0 1rem 0;
+            font-size: 1.25rem;
+        }
+
+        .toc ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .toc li {
+            margin-bottom: 0.5rem;
+        }
+
+        .toc a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .toc a:hover {
+            color: var(--primary);
+        }
+
+        /* Status badges */
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin-left: 1rem;
+        }
+
+        .status-badge.stable {
+            background: rgba(34, 197, 94, 0.2);
+            color: var(--success);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .status-badge.beta {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .docs-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                display: none;
+            }
+
+            .content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+
+            .nav-links {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">ChatFlow AI</div>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="features.html">Features</a></li>
+                <li><a href="pricing.html">Pricing</a></li>
+                <li><a href="about.html">About</a></li>
+                <li><a href="documentation.html" class="active">Docs</a></li>
+                <li><a href="contact.html">Contact</a></li>
+            </ul>
+            <a href="auth/signin.html" class="cta-button">Get Started</a>
+        </div>
+    </nav>
+
+    <div class="docs-layout">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="sidebar-section">
+                <div class="sidebar-title">Getting Started</div>
+                <ul class="sidebar-nav">
+                    <li><a href="#overview" class="active">Overview</a></li>
+                    <li><a href="#authentication">Authentication</a></li>
+                    <li><a href="#quick-start">Quick Start</a></li>
+                </ul>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-title">API Reference</div>
+                <ul class="sidebar-nav">
+                    <li><a href="#data-ingestion">Data Ingestion</a></li>
+                    <li><a href="#training">Training</a></li>
+                    <li><a href="#search">Vector Search</a></li>
+                    <li><a href="#chatbots">Chatbot Management</a></li>
+                    <li><a href="#analytics">Analytics</a></li>
+                </ul>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-title">SDKs & Tools</div>
+                <ul class="sidebar-nav">
+                    <li><a href="#javascript-sdk">JavaScript SDK</a></li>
+                    <li><a href="#python-sdk">Python SDK</a></li>
+                    <li><a href="#webhooks">Webhooks</a></li>
+                    <li><a href="#cli-tools">CLI Tools</a></li>
+                </ul>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-title">Guides</div>
+                <ul class="sidebar-nav">
+                    <li><a href="#best-practices">Best Practices</a></li>
+                    <li><a href="#troubleshooting">Troubleshooting</a></li>
+                    <li><a href="#examples">Examples</a></li>
+                </ul>
+            </div>
+        </nav>
+
+        <!-- Content -->
+        <main class="content">
+            <section id="overview">
+                <h1>ChatFlow AI API Documentation</h1>
+                <p>Welcome to the ChatFlow AI API documentation. Our comprehensive API allows you to build intelligent chatbots, process training data, and perform advanced vector search operations.</p>
+
+                <!-- Table of Contents -->
+                <div class="toc">
+                    <h3>Table of Contents</h3>
+                    <ul>
+                        <li><a href="#overview">API Overview</a></li>
+                        <li><a href="#authentication">Authentication</a></li>
+                        <li><a href="#quick-start">Quick Start Guide</a></li>
+                        <li><a href="#data-ingestion">Data Ingestion API</a></li>
+                        <li><a href="#training">Training Pipeline API</a></li>
+                        <li><a href="#search">Vector Search API</a></li>
+                        <li><a href="#chatbots">Chatbot Management</a></li>
+                        <li><a href="#analytics">Analytics & Monitoring</a></li>
+                    </ul>
+                </div>
+
+                <h3>Base URL</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-title">Base URL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code>https://api.chatflowai.com/v1</code></pre>
+                </div>
+
+                <h3>Rate Limits</h3>
+                <p>API requests are limited to:</p>
+                <ul>
+                    <li><strong>Starter Plan:</strong> 1,000 requests per hour</li>
+                    <li><strong>Professional Plan:</strong> 10,000 requests per hour</li>
+                    <li><strong>Enterprise Plan:</strong> 100,000 requests per hour</li>
+                </ul>
+            </section>
+
+            <section id="authentication">
+                <h2>Authentication</h2>
+                <p>The ChatFlow AI API uses API keys for authentication. Include your API key in the request headers.</p>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-title">Authentication Header</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code>Authorization: Bearer YOUR_API_KEY</code></pre>
+                </div>
+
+                <h3>Getting Your API Key</h3>
+                <ol>
+                    <li>Sign up for a ChatFlow AI account</li>
+                    <li>Go to your dashboard settings</li>
+                    <li>Navigate to the "API Keys" section</li>
+                    <li>Generate a new API key</li>
+                </ol>
+            </section>
+
+            <section id="quick-start">
+                <h2>Quick Start Guide</h2>
+                <p>Get started with the ChatFlow AI API in just a few steps:</p>
+
+                <h3>1. Create a Chatbot</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-title">JavaScript</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code>const response = await fetch('https://api.chatflowai.com/v1/chatbots', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    name: 'My First Chatbot',
+    description: 'A helpful customer service bot',
+    industry: 'E-commerce'
+  })
+});
+
+const chatbot = await response.json();
+console.log('Chatbot created:', chatbot.id);</code></pre>
+                </div>
+
+                <h3>2. Upload Training Data</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-title">JavaScript</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code>const formData = new FormData();
+formData.append('file', trainingFile);
+formData.append('chatbot_id', chatbot.id);
+formData.append('content_type', 'faq');
+
+const uploadResponse = await fetch('https://api.chatflowai.com/v1/upload-training-data', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY'
+  },
+  body: formData
+});
+
+const uploadResult = await uploadResponse.json();
+console.log('Upload status:', uploadResult.status);</code></pre>
+                </div>
+
+                <h3>3. Start Training</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-title">JavaScript</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code>const trainingResponse = await fetch('https://api.chatflowai.com/v1/training/start', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    chatbot_id: chatbot.id,
+    job_type: 'initial_training'
+  })
+});
+
+const trainingJob = await trainingResponse.json();
+console.log('Training started:', trainingJob.job_id);</code></pre>
+                </div>
+            </section>
+
+            <section id="data-ingestion">
+                <h2>Data Ingestion API<span class="status-badge stable">Stable</span></h2>
+                <p>Upload and process training data for your chatbots.</p>
+
+                <div class="api-card">
+                    <div class="api-header">
+                        <div>
+                            <span class="api-method post">POST</span>
+                            <span class="api-endpoint">/upload-training-data</span>
+                        </div>
+                        <div class="api-description">
+                            Upload training data files (PDF, CSV, JSON, DOCX)
+                        </div>
+                    </div>
+                    <div class="api-body">
+                        <h4>Parameters</h4>
+                        <table class="parameter-table">
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Required</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><span class="param-name">file</span></td>
+                                    <td><span class="param-type">File</span></td>
+                                    <td><span class="required">Yes</span></td>
+                                    <td>Training data file</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="param-name">chatbot_id</span></td>
+                                    <td><span class="param-type">String</span></td>
+                                    <td><span class="required">Yes</span></td>
+                                    <td>Target chatbot ID</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="param-name">content_type</span></td>
+                                    <td><span class="param-type">String</span></td>
+                                    <td><span class="required">Yes</span></td>
+                                    <td>Type: faq, conversation, document, knowledge_base</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="param-name">title</span></td>
+                                    <td><span class="param-type">String</span></td>
+                                    <td>No</td>
+                                    <td>Optional title for the data</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="param-name">category</span></td>
+                                    <td><span class="param-type">String</span></td>
+                                    <td>No</td>
+                                    <td>Category for organization</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Response</h4>
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-title">JSON Response</span>
+                                <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                            </div>
+                            <pre><code>{
+  "status": "queued",
+  "items_count": 25,
+  "job_ids": ["uuid1", "uuid2"],
+  "file_type": "text/csv"
+}</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="api-card">
+                    <div class="api-header">
+                        <div>
+                            <span class="api-method">GET</span>
+                            <span class="api-endpoint">/training-data/{chatbot_id}</span>
+                        </div>
+                        <div class="api-description">
+                            Get training data status and metadata
+                        </div>
+                    </div>
+                    <div class="api-body">
+                        <h4>Query Parameters</h4>
+                        <table class="parameter-table">
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Default</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><span class="param-name">page</span></td>
+                                    <td><span class="param-type">Integer</span></td>
+                                    <td>1</td>
+                                    <td>Page number for pagination</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="param-name">limit</span></td>
+                                    <td><span class="param-type">Integer</span></td>
+                                    <td>50</td>
+                                    <td>Items per page (max 100)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section id="training">
+                <h2>Training Pipeline API<span class="status-badge stable">Stable</span></h2>
+                <p>Manage chatbot training jobs and model versions.</p>
+
+                <div class="api-card">
+                    <div class="api-header">
+                        <div>
+                            <span class="api-method post">POST</span>
+                            <span class="api-endpoint">/training/start</span>
+                        </div>
+                        <div class="api-description">
+                            Start a new training job for a chatbot
+                        </div>
+                    </div>
+                    <div class="api-body">
+                        <h4>Request Body</h4>
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-title">JSON Request</span>
+                                <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                            </div>
+                            <pre><code>{
+  "chatbot_id": "uuid",
+  "job_type": "initial_training",
+  "config": {
+    "batch_size": 16,
+    "num_epochs": 3,
+    "learning_rate": 2e-5,
+    "validation_split": 0.2
+  }
+}</code></pre>
+                        </div>
+
+                        <h4>Response</h4>
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-title">JSON Response</span>
+                                <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                            </div>
+                            <pre><code>{
+  "job_id": "training-job-uuid",
+  "status": "queued",
+  "estimated_duration": "15-30 minutes"
+}</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="api-card">
+                    <div class="api-header">
+                        <div>
+                            <span class="api-method">GET</span>
+                            <span class="api-endpoint">/training/status/{job_id}</span>
+                        </div>
+                        <div class="api-description">
+                            Get training job status and progress
+                        </div>
+                    </div>
+                    <div class="api-body">
+                        <h4>Response</h4>
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-title">JSON Response</span>
+                                <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                            </div>
+                            <pre><code>{
+  "id": "training-job-uuid",
+  "status": "processing",
+  "progress_percentage": 65.5,
+  "model_metrics": {
+    "accuracy": 0.92,
+    "f1_score": 0.89
+  },
+  "started_at": "2024-03-15T10:30:00Z",
+  "estimated_completion": "2024-03-15T10:45:00Z"
+}</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="search">
+                <h2>Vector Search API<span class="status-badge stable">Stable</span></h2>
+                <p>Perform semantic similarity search across your chatbot's knowledge base.</p>
+
+                <div class="api-card">
+                    <div class="api-header">
+                        <div>
+                            <span class="api-method post">POST</span>
+                            <span class="api-endpoint">/search</span>
+                        </div>
+                        <div class="api-description">
+                            Perform semantic similarity search
+                        </div>
+                    </div>
+                    <div class="api-body">
+                        <h4>Request Body</h4>
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-title">JSON Request</span>
+                                <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                            </div>
+                            <pre><code>{
+  "query": "How do I reset my password?",
+  "chatbot_id": "uuid",
+  "max_results": 5,
+  "similarity_threshold": 0.8,
+  "search_types": ["question", "answer", "knowledge"],
+  "category_filter": "support"
+}</code></pre>
+                        </div>
+
+                        <h4>Response</h4>
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-title">JSON Response</span>
+                                <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                            </div>
+                            <pre><code>{
+  "results": [
+    {
+      "id": "result-uuid",
+      "content": "To reset your password, click 'Forgot Password' on the login page...",
+      "similarity_score": 0.95,
+      "source_type": "faq",
+      "metadata": {
+        "title": "Password Reset Instructions",
+        "category": "support",
+        "tags": ["password", "login", "security"]
+      }
+    }
+  ],
+  "total": 1,
+  "query": "How do I reset my password?",
+  "threshold": 0.8
+}</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="api-card">
+                    <div class="api-header">
+                        <div>
+                            <span class="api-method">GET</span>
+                            <span class="api-endpoint">/search/hybrid/{chatbot_id}</span>
+                        </div>
+                        <div class="api-description">
+                            Perform hybrid search across all content types
+                        </div>
+                    </div>
+                    <div class="api-body">
+                        <h4>Query Parameters</h4>
+                        <table class="parameter-table">
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Required</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><span class="param-name">q</span></td>
+                                    <td><span class="param-type">String</span></td>
+                                    <td><span class="required">Yes</span></td>
+                                    <td>Search query</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="param-name">user_id</span></td>
+                                    <td><span class="param-type">String</span></td>
+                                    <td>No</td>
+                                    <td>User ID for personalization</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section id="best-practices">
+                <h2>Best Practices</h2>
+                
+                <h3>Data Quality</h3>
+                <ul>
+                    <li>Ensure training data is clean and well-formatted</li>
+                    <li>Use diverse examples for better generalization</li>
+                    <li>Regular data quality assessments</li>
+                    <li>Remove duplicate or irrelevant content</li>
+                </ul>
+
+                <h3>Performance Optimization</h3>
+                <ul>
+                    <li>Use appropriate similarity thresholds (0.7-0.9)</li>
+                    <li>Implement caching for frequent queries</li>
+                    <li>Monitor response times and optimize accordingly</li>
+                    <li>Use batch operations when possible</li>
+                </ul>
+
+                <h3>Security</h3>
+                <ul>
+                    <li>Keep API keys secure and rotate regularly</li>
+                    <li>Use HTTPS for all API requests</li>
+                    <li>Implement proper error handling</li>
+                    <li>Monitor API usage for anomalies</li>
+                </ul>
+            </section>
+
+            <section id="troubleshooting">
+                <h2>Troubleshooting</h2>
+                
+                <h3>Common Issues</h3>
+
+                <h4>401 Unauthorized</h4>
+                <p>Check that your API key is correct and included in the Authorization header.</p>
+
+                <h4>Rate Limit Exceeded</h4>
+                <p>Implement exponential backoff and respect rate limits. Consider upgrading your plan for higher limits.</p>
+
+                <h4>Training Job Failed</h4>
+                <p>Check the error message in the training job status. Common issues include insufficient training data or malformed input files.</p>
+
+                <h4>Low Search Accuracy</h4>
+                <p>Try lowering the similarity threshold, adding more diverse training data, or retraining your model.</p>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // Copy code functionality
+        function copyCode(button) {
+            const codeBlock = button.parentElement.nextElementSibling;
+            const code = codeBlock.textContent;
+            
+            navigator.clipboard.writeText(code).then(() => {
+                button.textContent = 'Copied!';
+                setTimeout(() => {
+                    button.textContent = 'Copy';
+                }, 2000);
+            });
+        }
+
+        // Smooth scrolling for sidebar links
+        document.querySelectorAll('.sidebar-nav a').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetId = link.getAttribute('href').substring(1);
+                const targetElement = document.getElementById(targetId);
+                
+                if (targetElement) {
+                    // Update active link
+                    document.querySelectorAll('.sidebar-nav a').forEach(l => l.classList.remove('active'));
+                    link.classList.add('active');
+                    
+                    // Smooth scroll
+                    targetElement.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Update active nav item on scroll
+        const observerOptions = {
+            threshold: 0.3,
+            rootMargin: '-100px 0px -50% 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const id = entry.target.id;
+                    document.querySelectorAll('.sidebar-nav a').forEach(link => {
+                        link.classList.remove('active');
+                        if (link.getAttribute('href') === `#${id}`) {
+                            link.classList.add('active');
+                        }
+                    });
+                }
+            });
+        }, observerOptions);
+
+        // Observe all sections
+        document.querySelectorAll('section[id]').forEach(section => {
+            observer.observe(section);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,329 @@
+version: '3.8'
+
+services:
+  # Database
+  postgres:
+    image: pgvector/pgvector:pg15
+    container_name: chatflow-postgres
+    environment:
+      POSTGRES_DB: ${DB_NAME:-chatbot_training}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-chatbot_training}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - chatflow-network
+
+  # Redis (for caching and message broker)
+  redis:
+    image: redis:7-alpine
+    container_name: chatflow-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - chatflow-network
+
+  # Data Ingestion Service
+  data-ingestion:
+    build:
+      context: .
+      target: production
+    container_name: chatflow-data-ingestion
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME:-chatbot_training}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - REDIS_URL=redis://redis:6379/0
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+    command: ["uvicorn", "backend.data_ingestion:app", "--host", "0.0.0.0", "--port", "8001"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - chatflow-network
+
+  # Vector Search Service
+  vector-search:
+    build:
+      context: .
+      target: production
+    container_name: chatflow-vector-search
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME:-chatbot_training}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - REDIS_URL=redis://redis:6379/0
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./models:/app/models
+      - ./logs:/app/logs
+    command: ["uvicorn", "backend.vector_search:search_app", "--host", "0.0.0.0", "--port", "8002"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - chatflow-network
+
+  # Training Pipeline Service
+  training-pipeline:
+    build:
+      context: .
+      target: production
+    container_name: chatflow-training-pipeline
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME:-chatbot_training}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - REDIS_URL=redis://redis:6379/0
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    ports:
+      - "8003:8003"
+    volumes:
+      - ./models:/app/models
+      - ./logs:/app/logs
+    command: ["uvicorn", "backend.training_pipeline:training_app", "--host", "0.0.0.0", "--port", "8003"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - chatflow-network
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 2G
+
+  # Performance Optimization Service
+  performance-optimizer:
+    build:
+      context: .
+      target: production
+    container_name: chatflow-performance-optimizer
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME:-chatbot_training}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - REDIS_URL=redis://redis:6379/0
+    ports:
+      - "8004:8004"
+    volumes:
+      - ./logs:/app/logs
+    command: ["uvicorn", "backend.performance_optimizer:perf_app", "--host", "0.0.0.0", "--port", "8004"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - chatflow-network
+
+  # Monitoring & Analytics Service
+  monitoring-analytics:
+    build:
+      context: .
+      target: production
+    container_name: chatflow-monitoring-analytics
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME:-chatbot_training}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - REDIS_URL=redis://redis:6379/0
+    ports:
+      - "8005:8005"
+      - "8000:8000"  # Prometheus metrics
+    volumes:
+      - ./logs:/app/logs
+    command: ["python", "backend/monitoring_analytics.py"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - chatflow-network
+
+  # Celery Workers
+  celery-worker-embeddings:
+    build:
+      context: .
+      target: worker
+    container_name: chatflow-worker-embeddings
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME:-chatbot_training}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - REDIS_URL=redis://redis:6379/0
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    volumes:
+      - ./models:/app/models
+      - ./logs:/app/logs
+    command: ["celery", "-A", "backend.embedding_service", "worker", "--loglevel=info", "--concurrency=4", "-Q", "embeddings"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - chatflow-network
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 1G
+
+  celery-worker-training:
+    build:
+      context: .
+      target: worker
+    container_name: chatflow-worker-training
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME:-chatbot_training}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - REDIS_URL=redis://redis:6379/0
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    volumes:
+      - ./models:/app/models
+      - ./logs:/app/logs
+    command: ["celery", "-A", "backend.training_pipeline", "worker", "--loglevel=info", "--concurrency=2", "-Q", "training"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - chatflow-network
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 2G
+
+  celery-worker-optimization:
+    build:
+      context: .
+      target: worker
+    container_name: chatflow-worker-optimization
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME:-chatbot_training}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - REDIS_URL=redis://redis:6379/0
+    volumes:
+      - ./logs:/app/logs
+    command: ["celery", "-A", "backend.performance_optimizer", "worker", "--loglevel=info", "--concurrency=2", "-Q", "optimization"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - chatflow-network
+
+  # Nginx reverse proxy
+  nginx:
+    image: nginx:alpine
+    container_name: chatflow-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - .:/var/www/html:ro
+    depends_on:
+      - data-ingestion
+      - vector-search
+      - training-pipeline
+      - performance-optimizer
+      - monitoring-analytics
+    restart: unless-stopped
+    networks:
+      - chatflow-network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  chatflow-network:
+    driver: bridge
