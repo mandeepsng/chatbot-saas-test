@@ -1,0 +1,211 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg15
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-chatbot_saas_db}
+      POSTGRES_USER: ${POSTGRES_USER:-chatbot_saas_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - chatbot_postgres_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql
+    ports:
+      - "5433:5432"
+    deploy:
+      resources:
+        limits:
+          memory: 1200M
+          cpus: '0.8'
+        reservations:
+          memory: 800M
+          cpus: '0.5'
+    command: >
+      postgres -c max_connections=50
+               -c shared_buffers=256MB
+               -c effective_cache_size=512MB
+               -c work_mem=4MB
+               -c maintenance_work_mem=64MB
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-chatbot_saas_user}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.2'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
+    command: >
+      redis-server
+      --maxmemory 200mb
+      --maxmemory-policy allkeys-lru
+      --save 60 1
+      --loglevel warning
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  data-ingestion:
+    build: 
+      context: .
+      dockerfile: Dockerfile.minimal
+    command: >
+      uvicorn backend.data_ingestion:app
+      --host 0.0.0.0
+      --port 8001
+      --workers 1
+    ports:
+      - "8091:8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file: .env
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.6'
+        reservations:
+          memory: 256M
+          cpus: '0.3'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  vector-search:
+    build: 
+      context: .
+      dockerfile: Dockerfile.minimal
+    command: >
+      uvicorn backend.vector_search:app
+      --host 0.0.0.0
+      --port 8002
+      --workers 1
+    ports:
+      - "8092:8002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file: .env
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.6'
+        reservations:
+          memory: 256M
+          cpus: '0.3'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  training-pipeline:
+    build: 
+      context: .
+      dockerfile: Dockerfile.minimal
+    command: >
+      uvicorn backend.training_pipeline:app
+      --host 0.0.0.0
+      --port 8003
+      --workers 1
+    ports:
+      - "8093:8003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file: .env
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.6'
+        reservations:
+          memory: 256M
+          cpus: '0.3'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Simple background worker (no celery complexity)
+  worker:
+    build: 
+      context: .
+      dockerfile: Dockerfile.minimal
+    command: >
+      python -m backend.simple_worker
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file: .env
+    deploy:
+      resources:
+        limits:
+          memory: 400M
+          cpus: '0.4'
+        reservations:
+          memory: 200M
+          cpus: '0.2'
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:1.24-alpine
+    ports:
+      - "8090:80"
+    volumes:
+      - ./nginx.minimal.conf:/etc/nginx/nginx.conf:ro
+      - ./:/var/www/html:ro
+    depends_on:
+      - data-ingestion
+      - vector-search
+      - training-pipeline
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.2'
+        reservations:
+          memory: 64M
+          cpus: '0.1'
+    restart: unless-stopped
+
+volumes:
+  chatbot_postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  default:
+    driver: bridge

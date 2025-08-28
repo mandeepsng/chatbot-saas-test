@@ -1,0 +1,52 @@
+# Minimal Dockerfile for 4GB Droplet - ChatBot SaaS
+FROM python:3.11-slim
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    DEBIAN_FRONTEND=noninteractive
+
+# Install minimal system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    libpq-dev \
+    libmagic1 \
+    gcc \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Create app user
+RUN useradd --create-home --shell /bin/bash app
+
+# Set work directory
+WORKDIR /app
+
+# Copy minimal requirements
+COPY backend/requirements.minimal.txt ./requirements.txt
+
+# Install Python dependencies (step by step to avoid conflicts)
+RUN pip install --upgrade pip setuptools wheel && \
+    pip install redis==5.0.1 && \
+    pip install celery==5.2.7 && \
+    pip install cryptography==3.4.8 && \
+    pip install -r requirements.txt
+
+# Copy application code
+COPY backend/ ./backend/
+COPY database/ ./database/
+
+# Create directories and set permissions
+RUN mkdir -p /app/models /app/logs /app/uploads && \
+    chown -R app:app /app
+
+# Switch to app user
+USER app
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8001/health || exit 1
+
+# Default command
+CMD ["uvicorn", "backend.data_ingestion:app", "--host", "0.0.0.0", "--port", "8001", "--workers", "1"]
