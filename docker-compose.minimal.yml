@@ -156,28 +156,22 @@ services:
       retries: 3
     restart: unless-stopped
 
-  # Simple background worker (no celery complexity)
-  worker:
-    build: 
-      context: .
-      dockerfile: Dockerfile.minimal
-    command: >
-      python -m backend.simple_worker
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    env_file: .env
-    deploy:
-      resources:
-        limits:
-          memory: 400M
-          cpus: '0.4'
-        reservations:
-          memory: 200M
-          cpus: '0.2'
-    restart: unless-stopped
+  # Simple background worker (optional - comment out if issues)
+  # worker:
+  #   build: 
+  #     context: .
+  #     dockerfile: Dockerfile.minimal
+  #   command: python backend/simple_worker.py
+  #   depends_on:
+  #     - postgres
+  #     - redis
+  #   env_file: .env
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         memory: 300M
+  #         cpus: '0.3'
+  #   restart: unless-stopped
 
   nginx:
     image: nginx:1.24-alpine
