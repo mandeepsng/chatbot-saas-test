@@ -10,15 +10,23 @@ CREATE EXTENSION IF NOT EXISTS "pg_trgm";
 -- CORE ENTITIES
 -- ============================================================================
 
--- Users table (existing, but referenced here)
+-- Users table with authentication
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email VARCHAR(255) UNIQUE NOT NULL,
-    name VARCHAR(255) NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    name VARCHAR(255),
+    company VARCHAR(255),
     plan_type VARCHAR(50) DEFAULT 'starter',
+    last_login TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Add missing columns if table exists
+ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS company VARCHAR(255);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login TIMESTAMP;
 
 -- Chatbots table
 CREATE TABLE IF NOT EXISTS chatbots (

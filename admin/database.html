@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Viewer - ChatBot SaaS Admin</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f172a;
+            color: #ffffff;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .header {
+            margin-bottom: 2rem;
+        }
+        
+        .header h1 {
+            color: #6366f1;
+            margin-bottom: 0.5rem;
+        }
+        
+        .nav-back {
+            display: inline-block;
+            color: #8b5cf6;
+            text-decoration: none;
+            margin-bottom: 1rem;
+        }
+        
+        .nav-back:hover {
+            color: #6366f1;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+        
+        .stat-card h3 {
+            color: #6366f1;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #10b981;
+        }
+        
+        .users-table {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .table-header {
+            background: rgba(99, 102, 241, 0.1);
+            padding: 1rem;
+            border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+        }
+        
+        .table-header h2 {
+            color: #6366f1;
+        }
+        
+        .table-content {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            text-align: left;
+            padding: 1rem;
+            border-bottom: 1px solid rgba(99, 102, 241, 0.1);
+        }
+        
+        th {
+            background: rgba(99, 102, 241, 0.05);
+            color: #8b5cf6;
+            font-weight: 600;
+        }
+        
+        tr:hover {
+            background: rgba(99, 102, 241, 0.05);
+        }
+        
+        .user-email {
+            color: #06b6d4;
+        }
+        
+        .user-company {
+            color: #10b981;
+        }
+        
+        .user-date {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #8b5cf6;
+        }
+        
+        .error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+        
+        .refresh-btn {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            margin-bottom: 1rem;
+        }
+        
+        .refresh-btn:hover {
+            transform: translateY(-1px);
+        }
+        
+        .refresh-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="dashboard.html" class="nav-back">← Back to Admin Dashboard</a>
+            <h1>🗄️ Database Viewer</h1>
+            <p>View and monitor user registrations and database entries</p>
+            
+            <button class="refresh-btn" onclick="loadData()">🔄 Refresh Data</button>
+        </div>
+        
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-card">
+                <h3>Total Users</h3>
+                <div class="stat-number" id="totalUsers">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>New This Week</h3>
+                <div class="stat-number" id="newThisWeek">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>Active Users</h3>
+                <div class="stat-number" id="activeUsers">-</div>
+            </div>
+        </div>
+        
+        <div class="users-table">
+            <div class="table-header">
+                <h2>👥 Registered Users</h2>
+            </div>
+            <div class="table-content" id="tableContent">
+                <div class="loading">Loading users...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Database viewing functionality
+        async function loadData() {
+            const refreshBtn = document.querySelector('.refresh-btn');
+            refreshBtn.disabled = true;
+            refreshBtn.textContent = '🔄 Loading...';
+            
+            try {
+                // For now, simulate loading since we don't have a users API endpoint yet
+                // In production, you'd fetch from /api/admin/users
+                
+                // Simulate API delay
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Mock data - replace with actual API call
+                const mockUsers = [
+                    {
+                        email: 'demo@example.com',
+                        company: 'Demo Company',
+                        plan_type: 'starter',
+                        created_at: new Date().toISOString(),
+                        last_login: new Date().toISOString()
+                    }
+                ];
+                
+                // Update stats
+                document.getElementById('totalUsers').textContent = mockUsers.length;
+                document.getElementById('newThisWeek').textContent = '1';
+                document.getElementById('activeUsers').textContent = '1';
+                
+                // Update table
+                displayUsers(mockUsers);
+                
+            } catch (error) {
+                document.getElementById('tableContent').innerHTML = 
+                    '<div class="error">❌ Error loading data. Make sure your API endpoints are working.</div>';
+            } finally {
+                refreshBtn.disabled = false;
+                refreshBtn.textContent = '🔄 Refresh Data';
+            }
+        }
+        
+        function displayUsers(users) {
+            if (users.length === 0) {
+                document.getElementById('tableContent').innerHTML = 
+                    '<div class="loading">No users found. Create some test accounts!</div>';
+                return;
+            }
+            
+            const tableHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Email</th>
+                            <th>Company</th>
+                            <th>Plan</th>
+                            <th>Registered</th>
+                            <th>Last Login</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${users.map(user => `
+                            <tr>
+                                <td class="user-email">${user.email}</td>
+                                <td class="user-company">${user.company || 'N/A'}</td>
+                                <td><span style="background: rgba(99, 102, 241, 0.2); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem;">${user.plan_type}</span></td>
+                                <td class="user-date">${new Date(user.created_at).toLocaleDateString()}</td>
+                                <td class="user-date">${user.last_login ? new Date(user.last_login).toLocaleDateString() : 'Never'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            
+            document.getElementById('tableContent').innerHTML = tableHTML;
+        }
+        
+        // Load data when page loads
+        document.addEventListener('DOMContentLoaded', loadData);
+    </script>
+</body>
+</html>

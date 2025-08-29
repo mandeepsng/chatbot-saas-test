@@ -476,15 +476,150 @@ class ConversationExtractor:
 # FastAPI endpoints for file upload integration
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
+from passlib.context import CryptContext
+import jwt
+from datetime import datetime, timedelta
 
 app = FastAPI()
+
+# Auth models
+class UserSignup(BaseModel):
+    email: str
+    password: str
+    company: str
+
+class UserLogin(BaseModel):
+    email: str
+    password: str
+
+class UserResponse(BaseModel):
+    id: str
+    email: str
+    company: str
+    token: str
+
+# Password hashing
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-this-in-production")
+ALGORITHM = "HS256"
 ingestion_service = DataIngestionService({
     'host': os.getenv('DB_HOST', 'localhost'),
     'port': int(os.getenv('DB_PORT', '5432')),
-    'database': os.getenv('DB_NAME', 'chatbot_training'),
-    'user': os.getenv('DB_USER', 'postgres'),
+    'database': os.getenv('DB_NAME', 'chatbot_saas_db'),
+    'user': os.getenv('DB_USER', 'chatbot_saas_user'),
     'password': os.getenv('DB_PASSWORD', 'postgres')
 })
+
+def create_access_token(data: dict):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(hours=24)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    return {"status": "healthy", "service": "data-ingestion", "timestamp": datetime.utcnow()}
+
+@app.post("/auth/signup")
+async def signup(user: UserSignup):
+    """User registration endpoint"""
+    try:
+        # Hash password
+        hashed_password = pwd_context.hash(user.password)
+        
+        # Connect to database
+        conn = await ingestion_service.get_db_connection()
+        
+        try:
+            # Check if user exists
+            existing = await conn.fetchrow(
+                "SELECT id FROM users WHERE email = $1", user.email.lower()
+            )
+            
+            if existing:
+                raise HTTPException(status_code=400, detail="Email already registered")
+            
+            # Create user
+            user_id = str(uuid.uuid4())
+            await conn.execute("""
+                INSERT INTO users (id, email, password_hash, company, created_at, updated_at)
+                VALUES ($1, $2, $3, $4, $5, $6)
+            """, user_id, user.email.lower(), hashed_password, user.company, 
+                datetime.utcnow(), datetime.utcnow())
+            
+            # Create access token
+            token = create_access_token({"user_id": user_id, "email": user.email})
+            
+            return {
+                "message": "Account created successfully",
+                "user": {
+                    "id": user_id,
+                    "email": user.email,
+                    "company": user.company
+                },
+                "token": token
+            }
+            
+        finally:
+            await conn.close()
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Signup error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Registration failed")
+
+@app.post("/auth/login")
+async def login(user: UserLogin):
+    """User login endpoint"""
+    try:
+        conn = await ingestion_service.get_db_connection()
+        
+        try:
+            # Get user from database
+            db_user = await conn.fetchrow("""
+                SELECT id, email, password_hash, company
+                FROM users 
+                WHERE email = $1
+            """, user.email.lower())
+            
+            if not db_user:
+                raise HTTPException(status_code=401, detail="Invalid email or password")
+            
+            # Verify password
+            if not pwd_context.verify(user.password, db_user['password_hash']):
+                raise HTTPException(status_code=401, detail="Invalid email or password")
+            
+            # Create access token
+            token = create_access_token({"user_id": db_user['id'], "email": db_user['email']})
+            
+            # Update last login
+            await conn.execute(
+                "UPDATE users SET last_login = $1 WHERE id = $2",
+                datetime.utcnow(), db_user['id']
+            )
+            
+            return {
+                "message": "Login successful",
+                "user": {
+                    "id": db_user['id'],
+                    "email": db_user['email'],
+                    "company": db_user['company']
+                },
+                "token": token
+            }
+            
+        finally:
+            await conn.close()
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Login error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Login failed")
 
 @app.post("/api/upload-training-data")
 async def upload_training_data(
